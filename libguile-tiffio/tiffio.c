@@ -91,7 +91,7 @@ get_field_or_fail (TIFF *tif, ttag_t tag, const char* tag_str, ...)
 }
 
 /* Load a TIFF file */
-SCM_DEFINE (load_tiff, "load-tiff", 1, 0, 0,
+SCM_DEFINE (load_tiff, "%load-tiff", 1, 0, 0,
             (SCM s_filename),
             "Load a TIFF image.")
 {
@@ -192,7 +192,7 @@ SCM_DEFINE (load_tiff, "load-tiff", 1, 0, 0,
 
 
 /* Save a TIFF file */
-SCM_DEFINE (save_tiff, "save-tiff", 2, 0, 0,
+SCM_DEFINE (save_tiff, "%save-tiff", 2, 0, 0,
             (SCM array, SCM s_filename),
             "Save a TIFF image.")
 {
