@@ -1,5 +1,5 @@
 (define-module (ssc improc integral-image)
-  #:export (make-integral-image))
+  #:export (make-integral-image box-integral))
 
 ;;;; array-index-map-in-order! array proc
 ;;
@@ -45,18 +45,29 @@
         (lp i)
         #t)))
 
+(define (array-ref-or-0 array . indices)
+  (if (apply array-in-bounds? array indices)
+      (apply array-ref array indices)
+      0))
+
 (define (make-integral-image XX)
   (define II (apply make-typed-array
                     (array-type XX) 0
                     (array-dimensions XX)))
-  (define (II-ref-or-0 . indices)
-    (if (apply array-in-bounds? II indices)
-        (apply array-ref II indices)
-        0))
   (define (integral-at-point x y)
     (+ (array-ref XX x y)
-       (II-ref-or-0 (1- x) y)
-       (II-ref-or-0 x (1- y))
-       (- (II-ref-or-0 (1- x) (1- y)))))
+       (array-ref-or-0 II (1- x) y)
+       (array-ref-or-0 II x (1- y))
+       (- (array-ref-or-0 II (1- x) (1- y)))))
   (array-index-map-in-order! II integral-at-point)
   II)
+
+(define (box-integral II lower-bounds upper-bounds)
+  (let ((x1 (1- (car lower-bounds)))
+        (y1 (1- (cadr lower-bounds)))
+        (x2 (car upper-bounds))
+        (y2 (cadr upper-bounds)))
+    (- (+ (array-ref-or-0 II x2 y2)
+          (array-ref-or-0 II x1 y1))
+       (+ (array-ref-or-0 II x1 y2)
+          (array-ref-or-0 II x2 y1)))))
