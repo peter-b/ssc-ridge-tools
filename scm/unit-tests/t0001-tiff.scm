@@ -21,6 +21,5 @@
       (lambda () (set! tempfile (gettempfile)))
       (lambda ()
         (assert-true (save-tiff A tempfile))
-        (assert-true
-         (array-equal? A (load-tiff tempfile))))
+        (assert-equal A (load-tiff tempfile)))
       (lambda () (delete-file tempfile))))

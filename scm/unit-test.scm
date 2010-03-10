@@ -40,6 +40,7 @@
 
 (define-module (unit-test)
   #:use-module (ice-9 pretty-print)
+  #:use-module (ice-9 optargs)
   #:use-syntax (ice-9 syncase)
   #:export (assert-true
             assert-equal
@@ -62,8 +63,8 @@
                 (display "got: ")
                 (write result))))))
 
-(define (assert-equal expected result)
-  (if (equal? expected result)
+(define* (assert-equal expected result #:key (equal-func? equal?))
+  (if (equal-func? expected result)
       #t
       (throw 'test-failed-exception
              (with-output-to-string
