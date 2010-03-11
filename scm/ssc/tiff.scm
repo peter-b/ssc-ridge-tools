@@ -1,18 +1,23 @@
-(define-module (ssc tiff))
+(define-module (ssc tiff)
+  #:export (save-tiff load-tiff))
 
-(define tiffio-loaded #f)
+;;;; Allow dynamic library to be loaded lazily
+(define %tiff-module (current-module))
+(define (load-tiff-extension)
+  (save-module-excursion
+   (lambda ()
+     (set-current-module %tiff-module)
+     (load-extension "libguile-tiffio" "init_tiffio"))))
 
-(define (load-tiffio-extension)
-  (if tiffio-loaded
+
+(define (load-tiff . args)
+  (if (defined? '%load-tiff)
       #t
-      (begin
-        (load-extension "libguile-tiffio" "init_tiffio")
-        (set! tiffio-loaded #t)
-        #t)))
+      (load-tiff-extension))
+  (apply %load-tiff args))
 
-(define-public (load-tiff filename)
-  (load-tiffio-extension)
-  (%load-tiff filename))
-(define-public (save-tiff array filename)
-  (load-tiffio-extension)
-  (%save-tiff filename))
+(define (save-tiff . args)
+  (if (defined? '%save-tiff)
+      #t
+      (load-tiff-extension))
+  (apply %save-tiff args))
