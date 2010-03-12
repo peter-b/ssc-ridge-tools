@@ -92,3 +92,12 @@
 
     ;; Actually do the convolution.
     (convolve-recursive '() (reverse (cdr dest-shape)))))
+
+
+(define (convolve-array array filter dimension)
+  (let ((result (apply make-typed-array
+                       (array-type array)
+                       *unspecified*
+                       (array-shape array))))
+    (convolve-array! array result filter dimension)
+    result))
