@@ -1,3 +1,5 @@
+(use-modules (ssc tiff))
+
 (begin-test 'tiff-save-load
   (define tempfile #f)
   (define (gettempfile)
@@ -18,6 +20,6 @@
   (dynamic-wind
       (lambda () (set! tempfile (gettempfile)))
       (lambda ()
-        (assert-true ((@ (ssc tiff) save-tiff) A tempfile))
-        (assert-equal A ((@ (ssc tiff) load-tiff) tempfile)))
+        (assert-true (save-tiff A tempfile))
+        (assert-equal A (load-tiff tempfile)))
       (lambda () (delete-file tempfile))))
