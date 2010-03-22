@@ -97,7 +97,6 @@ for i = 1:size(Y,1);
     %% about are ridges rather than troughs, i.e. we're looking for
     %% maxima of value in the image).
     [V, L] = eig([Dxx(i,j) Dxy(i,j); Dxy(i,j) Dyy(i,j)]);
-    %[V, L] = fast_curvature(Dxx(i,j), Dyy(i,j), Dxy(i,j));
     if abs(L(1,1)) > abs(L(2,2)); k = 1; else; k = 2; end
     Lqq(i,j) = L(k,k);
 
@@ -184,25 +183,4 @@ if nargout == 0;
   axis image;
   axis([0 size(Y,2) 0 size(Y,1)])
 end
-end
-
-function [V L] = fast_curvature(Lxx, Lyy, Lxy)
-
-  % Find eigenvalues
-  a = (Lxx + Lyy)/2;
-  b = sqrt((Lxx - Lyy)^2 + 4*Lxy^2)/2;
-  L = [a+b 0; 0 a-b];
-
-  % Find eigenvectors
-  V = zeros(2);
-  k = (Lxx - L(1)) / Lxy;
-  if abs(k) <= 1;
-    v = [1 k]';
-  else;
-    v = [1/k 1]';
-  end
-  v = v / sqrt(v'*v);
-
-  V(:,1) = v;
-  V(:,2) = [0 1; -1 0]*v;
 end
