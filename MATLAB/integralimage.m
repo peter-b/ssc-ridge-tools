@@ -1,7 +1,7 @@
 function Y = integralimage(X)                           % -*-Matlab-*-
 % INTEGRALIMAGE  Calculate an integral image.
 %
-% Y = imintegral(X)
+% Y = integralimage(X)
 %
 % INPUTS
 %   X    Image for which to calculate the integral image.
