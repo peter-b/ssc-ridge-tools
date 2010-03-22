@@ -1,4 +1,4 @@
-function ridgeplot (R)                                  % -*-Octave-*-
+function ridgeplot (R)                                  % -*-Matlab-*-
 % RIDGEPLOT  Plot extracted ridge segments
 %
 % ridgeplot(R)

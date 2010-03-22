@@ -1,4 +1,4 @@
-function R = ridgedetect_fast(X, scale) % -*-Octave-*-
+function R = ridgedetect_fast(X, scale)                 % -*-Matlab-*-
 
   [filt_size, step] = params_for_scale(scale);
   printf("Filter: %d\nStep: %d\n", filt_size, step);

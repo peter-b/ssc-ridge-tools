@@ -1,4 +1,4 @@
-function [R, Y] = ridgeextract(X, scale)                % -*-Octave-*-
+function [R, Y] = ridgeextract(X, scale)                % -*-Matlab-*-
 % RIDGEEXTRACT  Single-scale ridge extraction
 %
 % [R, Y] = ridgeextract(X, scale)

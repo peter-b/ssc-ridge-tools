@@ -1,4 +1,4 @@
-function ridgedemo(X, nlevels)                          % -*-Octave-*-
+function ridgedemo(X, nlevels)                          % -*-Matlab-*-
 % RIDGEDEMO  Plot ridges extracted at different scale levels
 %
 % ridgedemo(X, nlevels)

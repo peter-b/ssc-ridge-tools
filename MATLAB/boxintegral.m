@@ -1,4 +1,4 @@
-function s = boxintegral(I, row, col, rows, cols)                 % -*-Octave-*-
+function s = boxintegral(I, row, col, rows, cols)       % -*-Matlab-*-
 % BOXINTEGRAL  Calculate a box integral on an integral image.
 %
 % s = boxintegral(I, row, col, rows, cols)

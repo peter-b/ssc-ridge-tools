@@ -1,4 +1,4 @@
-function Y = integralimage(X)                              % -*-Octave-*-
+function Y = integralimage(X)                           % -*-Matlab-*-
 % INTEGRALIMAGE  Calculate an integral image.
 %
 % Y = imintegral(X)
