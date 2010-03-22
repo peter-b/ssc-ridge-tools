@@ -1,4 +1,4 @@
-function [R, Y] = ridgeextract(X, scale)                % -*-Matlab-*-
+function [R, Y] = ridgeextract(X, scale, step)          % -*-Matlab-*-
 % RIDGEEXTRACT  Single-scale ridge extraction
 %
 % [R, Y] = ridgeextract(X, scale)
@@ -54,6 +54,11 @@ function [R, Y] = ridgeextract(X, scale)                % -*-Matlab-*-
 %
 % See also ridgeplot, ridgedemo.
 
+if (nargin < 3);
+  % Very conservative downsampling.
+  step = 2^(max(0, floor(log(scale)/log(2)) - 4));
+end
+
 DSS_KERNEL = [1/6 2/3 1/6];
 DIFF_KERNEL = [1/2 0 -1/2];
 
@@ -85,24 +90,27 @@ Dxy = conv2(DIFF_KERNEL, 1, Dx, 'same');
 %% q is the unit vector in the most negative principal direction of
 %% curvature. Lq is the component of gradient in that direction, and Lqq
 %% is the corresponding curvature.
-Lq = zeros(size(Y));
-Lqq = zeros(size(Y));
+msize = ceil(size(Y)/step);
+Lq = zeros(msize);
+Lqq = zeros(msize);
 
-for i = 1:size(Y,1);
-  for j = 1:size(Y,2);
+for i = 1:msize(1);
+  for j = 1:msize(2);
+    si = (i-1)*step + 1;
+    sj = (j-1)*step + 1;
     %% Calculate curvatures at (i,j) using the eigenvalues of the
     %% Hessian matrix. We choose the eigenvector corresponding with the
     %% greatest curvature *magnitude* as the direction of interest, but
     %% later we'll check that the eigenvalue is negative (what we care
     %% about are ridges rather than troughs, i.e. we're looking for
     %% maxima of value in the image).
-    [V, L] = eig([Dxx(i,j) Dxy(i,j); Dxy(i,j) Dyy(i,j)]);
+    [V, L] = eig([Dxx(si,sj) Dxy(si,sj); Dxy(si,sj) Dyy(si,sj)]);
     if abs(L(1,1)) > abs(L(2,2)); k = 1; else; k = 2; end
     Lqq(i,j) = L(k,k);
 
     %% Find component of gradient in principal direction of curvature
     q1 = V(1,k); q2 = V(2,k);
-    Lq(i,j) = Dx(i,j)*q1 + Dy(i,j)*q2;
+    Lq(i,j) = Dx(si,sj)*q1 + Dy(si,sj)*q2;
   end
 end
 
@@ -123,8 +131,8 @@ end
 edge_defs = [0 0 1 0; 1 0 1 1; 1 1 0 1; 0 1 0 0];
 
 crossings = zeros(2);
-for i = 1:(size(Y,1)-1);
-  for j = 1:(size(Y,2)-1);
+for i = 1:(msize(1)-1);
+  for j = 1:(msize(2)-1);
     n_edges = 0;
     bad_edges = 0;
 
@@ -153,7 +161,7 @@ for i = 1:(size(Y,1)-1);
       delta = lq1 / (lq1 - lq2);
       edge_start = [i+edge_defs(k,1); j+edge_defs(k,2)];
       edge_end = [i+edge_defs(k,3); j+edge_defs(k,4)];
-      crossings(:,n_edges) = (1 - delta)*edge_start + delta*edge_end;
+      crossings(:,n_edges) = step*((1 - delta)*edge_start + delta*edge_end);
 
     end
 
