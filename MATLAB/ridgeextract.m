@@ -1,7 +1,7 @@
-function [R, Y] = ridgeextract(X, scale, step)          % -*-Matlab-*-
+function [R, Y, G] = ridgeextract(X, scale, step)          % -*-Matlab-*-
 % RIDGEEXTRACT  Single-scale ridge extraction
 %
-% [R, Y] = ridgeextract(X, scale)
+% [R, Y, G] = ridgeextract(X, scale)
 %
 % INPUTS
 %   X      Input image
@@ -10,6 +10,7 @@ function [R, Y] = ridgeextract(X, scale, step)          % -*-Matlab-*-
 % OUTPUTS
 %   R      Array of extracted ridge segments
 %   Y      Image with low-pass filter applie
+%   G      Gamma-norm values for each ridge segment
 %
 % Single-scale ridge extraction algorithm.  A ridge is defined as a
 % point for which the brightness assumes a maximum in the principal
@@ -61,9 +62,11 @@ end
 
 DSS_KERNEL = [1/6 2/3 1/6];
 DIFF_KERNEL = [1/2 0 -1/2];
+GAMMA = 3/4;
 
 n_ridge_lines = 0;
 R = zeros(2,2,256);
+G = zeros(256);
 
 %%%% Create low pass filter kernel
 %%
@@ -93,6 +96,7 @@ Dxy = conv2(DIFF_KERNEL, 1, Dx, 'same');
 msize = ceil(size(Y)/step);
 Lq = zeros(msize);
 Lqq = zeros(msize);
+Anorm = zeros(msize);
 
 for i = 1:msize(1);
   for j = 1:msize(2);
@@ -111,6 +115,10 @@ for i = 1:msize(1);
     %% Find component of gradient in principal direction of curvature
     q1 = V(1,k); q2 = V(2,k);
     Lq(i,j) = Dx(si,sj)*q1 + Dy(si,sj)*q2;
+    
+    % Calculate A-gamma-norm metric
+    Anorm(i,j) = scale^(2*GAMMA) * ...
+        ((Dxx(si,sj) - Dyy(si,sj))^2 + 4*Dxy(si,sj)^2);
   end
 end
 
@@ -131,6 +139,7 @@ end
 edge_defs = [0 0 1 0; 1 0 1 1; 1 1 0 1; 0 1 0 0];
 
 crossings = zeros(2);
+norm_vals = zeros(2,1);
 for i = 1:(msize(1)-1);
   for j = 1:(msize(2)-1);
     n_edges = 0;
@@ -164,6 +173,10 @@ for i = 1:(msize(1)-1);
       edge_end = [i+edge_defs(k,3); j+edge_defs(k,4)];
       crossings(:,n_edges) = step*((1 - delta)*edge_start + delta*edge_end);
 
+      % Record gamma-norm
+      norm_vals(n_edges) = ...
+          (1-delta)*Anorm(i+edge_defs(k,1),j+edge_defs(k,2)) + ...
+          delta*Anorm(i+edge_defs(k,3),j+edge_defs(k,4));
     end
 
     if (n_edges ~= 2) || (bad_edges ~= 0);
@@ -173,13 +186,16 @@ for i = 1:(msize(1)-1);
     n_ridge_lines = n_ridge_lines + 1;
     if n_ridge_lines > size(R,3);
       R = cat(3,R,zeros(size(R)));
+      G = cat(3,G,zeros(size(G)));
     end
+    
     R(:,:,n_ridge_lines) = crossings;
+    G(n_ridge_lines) = mean(norm_vals);
   end
 end
 
 R = R(:,:,1:n_ridge_lines);
-
+G = G(1:n_ridge_lines);
 
 if nargout == 0;
   clf
