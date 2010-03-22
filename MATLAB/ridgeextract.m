@@ -150,15 +150,16 @@ for i = 1:(msize(1)-1);
         break;
       end
 
-      %% FIXME we should check 
-      if lqq1 > 0 || lqq2 > 0; % Is it a trough?
-        break;
-      end
-
-      n_edges = n_edges + 1;
-
       % Interpolate zero-crossing
       delta = lq1 / (lq1 - lq2);
+
+      if ((1-delta)*lqq1 + delta*lqq2) > 0; % Is it a trough?
+        continue;
+      end
+
+      % Record zero-crossing point
+      n_edges = n_edges + 1;
+
       edge_start = [i+edge_defs(k,1); j+edge_defs(k,2)];
       edge_end = [i+edge_defs(k,3); j+edge_defs(k,4)];
       crossings(:,n_edges) = step*((1 - delta)*edge_start + delta*edge_end);
