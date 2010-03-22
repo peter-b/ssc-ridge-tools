@@ -1,12 +1,9 @@
-function R = ridgedetect_fast(X, scale)                 % -*-Matlab-*-
+function R = ridgeextract_box(X, scale)                 % -*-Matlab-*-
 
   [filt_size, step] = params_for_scale(scale);
-  printf("Filter: %d\nStep: %d\n", filt_size, step);
-  II = make_integral_image (X);
+  II = integralimage (X);
   [Lq, Lqq] = build_metrics_fast(II, filt_size, step);
-%  R = find_ridge_segments(Lq, Lqq, step);
-
-  imagesc(Lq);
+  R = find_ridge_segments(Lq, Lqq, step);
 
   if nargout ~= 0;
     return;
@@ -14,30 +11,32 @@ function R = ridgedetect_fast(X, scale)                 % -*-Matlab-*-
 
   clf;
   subplot(1,2,1); imagesc(X);
-  subplot(1,2,2); axis([0 size(X,2) 0 size(X,1)]);
-  hold on;
-  for i = 1:size(R,3);
-    plot (R(2,:,i), R(1,:,i), "k");
-  end
-  hold off;
+  subplot(1,2,2);
+  ridgeplot(R);
+  axis([0 size(X,2) 0 size(X,1)]);
+
+  return;
+  clf;
+  subplot(1,2,1); imagesc(Lq<0);
+  subplot(1,2,2); imagesc(Lqq<0);
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ====================================================================
 
 function R = find_ridge_segments(Lq, Lqq, step);
-%% Calculate ridge segment positions
+% Calculate ridge segment positions
 
-%% Consider a square of four pixels:
+% Consider a square of four pixels:
 
-%%         a --- b
-%%         |     |
-%%         |     |
-%%         c --- d
+%         a --- b
+%         |     |
+%         |     |
+%         c --- d
 
-%% Each of the four edges is checked to see if they contain a zero of
-%% Lq. If exactly two edges contain a zero of Lq, *and* neither of those
-%% edges has Lqq > 0 for at either end, interpolate the zero crossings
-%% in each edge and add a ridge segment.
+% Each of the four edges is checked to see if they contain a zero of
+% Lq. If exactly two edges contain a zero of Lq, *and* neither of those
+% edges has Lqq > 0 for at either end, interpolate the zero crossings
+% in each edge and add a ridge segment.
 
   edge_defs = [0 0 1 0; 1 0 1 1; 1 1 0 1; 0 1 0 0];
 
@@ -66,7 +65,7 @@ function R = find_ridge_segments(Lq, Lqq, step);
         lqq2 = Lqq(row+edge_defs(k,3),col+edge_defs(k,4));
 
         % Check sign of Lqq
-        if lqq1*(1-delta) + lqq2*delta < 0;
+        if lqq1*(1-delta) + lqq2*delta > 0;
           continue;
         end
 
@@ -99,11 +98,11 @@ function R = find_ridge_segments(Lq, Lqq, step);
   R = R(:,:,1:num_segments); % Truncate unused entries.
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ====================================================================
 
 function [Lq, Lqq] = build_metrics_fast(II, f, step)
-%% Calculate metrics. II is an integral image, f is the box filter
-%% size, and step is the downsampling step.
+% Calculate metrics. II is an integral image, f is the box filter
+% size, and step is the downsampling step.
   l = f/3;
   b = floor((f - 1)/2 + 1);
   d1 = 2*l+1;
@@ -111,109 +110,71 @@ function [Lq, Lqq] = build_metrics_fast(II, f, step)
   l2 = floor(l/2);
   inv_f2 = f^-2;
 
-  %% Pre-allocate metric matrices
+  % Pre-allocate metric matrices
   msize = ceil(size(II)/step);
   Lq = zeros(msize);
   Lqq = zeros(msize);
 
-  %% Calculate metric at each point.
+  % Calculate metric at each point.
   for row = 1:msize(1);
     for col = 1:msize(2);
-      r = (row-1*step)+1;
-      c = (col-1*step)+1;
+      r = ((row-1)*step)+1;
+      c = ((col-1)*step)+1;
 
-      %% Cheng etc.
-      Dx = + box_integral(II, r - l, c - l, l,  d1) ...
-           - box_integral(II, r + 1, c - l, l,  d1);
-      Dy = + box_integral(II, r - l, c - l, d1, l) ...
-           - box_integral(II, r - l, c + 1, d1, l);
 
-      %% SURF
-      Dxx = + box_integral(II, r - l + 1, c - b,     d2, f) ...
-            - box_integral(II, r - l + 1, c - l2,    d2, l)*3;
-      Dyy = + box_integral(II, r - b,     c - l + 1, f,  d2) ...
-            - box_integral(II, r - l2,    c - l + 1, l,  d2)*3;
+      % Cheng etc.
+      Dx = + boxintegral(II, r - l, c - l, l,  d1) ...
+           - boxintegral(II, r + 1, c - l, l,  d1);
+      Dy = + boxintegral(II, r - l, c - l, d1, l) ...
+           - boxintegral(II, r - l, c + 1, d1, l);
 
-      Dxy = + box_integral(II, r - l, c + 1, l, l) ...
-            + box_integral(II, r + 1, c - l, l, l) ...
-            - box_integral(II, r - l, c - l, l, l) ...
-            - box_integral(II, r + 1, c + 1, l, l);
+      % SURF
+      Dxx = + boxintegral(II, r - l + 1, c - b,     d2, f) ...
+            - boxintegral(II, r - l + 1, c - l2,    d2, l)*3;
+      Dyy = + boxintegral(II, r - b,     c - l + 1, f,  d2) ...
+            - boxintegral(II, r - l2,    c - l + 1, l,  d2)*3;
 
-      %% Normalise filter responses
+      Dxy = + boxintegral(II, r - l, c + 1, l, l) ...
+            + boxintegral(II, r + 1, c - l, l, l) ...
+            - boxintegral(II, r - l, c - l, l, l) ...
+            - boxintegral(II, r + 1, c + 1, l, l);
+
+      % Normalise filter responses
       Dx  = Dx  * inv_f2;
       Dy  = Dy  * inv_f2;
       Dxx = Dxx * inv_f2;
       Dyy = Dyy * inv_f2;
       Dxy = Dxy * inv_f2;
 
-      %% Find principal directions/curvatures
+      %      fprintf(1, '(%d,%d) --> (%d,%d): %d %d %d\n', row, col, r, c, Dxx, Dyy, Dxy);
+
+      % Find principal directions/curvatures
       [V, L] = eig([Dxx Dxy; Dxy Dyy]);
       if abs(L(1,1)) > abs(L(2,2));
         k = 1;
       else
         k = 2;
       end;
-      %% Save maximum principal curvature.
+      % Save maximum principal curvature.
       Lqq(row,col) = L(k,k);
 
-      %% Save component of gradient in direction of max. principal curvature.
-      Lq(row,col) = Dx*V(1,k) + Dy*V(2,k)
+      % Save component of gradient in direction of max. principal curvature.
+      Lq(row,col) = Dx*V(1,k) + Dy*V(2,k);
     end
   end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ====================================================================
 
 function [f, step] = params_for_scale(t)
-%% Calculate filter size and downsampling at scale t.
-%%
-%% Exploits the fact that a 9x9 filter has t = 1.2^2, and that the
-%% filter size must be of the form 6x+9
+% Calculate filter size and downsampling at scale t.
+%
+% Exploits the fact that a 9x9 filter has t = 1.2^2, and that the
+% filter size must be of the form 6x+9
   p = round(3/2 * (t - 1)/(1.2)^2);
   f = 6*p + 9;
 
-  %% Magic formula to determine downsampling step.
+  % Magic formula to determine downsampling step.
   s = max(1, floor(log(f/9*1.2)/log(2)));
   step = 2^(s-1);
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function s = box_integral(II, row, col, rows, cols)
-%% Calculate a box integral on an integral image
-  im_height = size(II, 1);
-  im_width = size(II, 2);
-
-  r1 = min([row      im_height]) - 1;
-  r2 = min([row+rows im_height]) - 1;
-  c1 = min([col      im_width])  - 1;
-  c2 = min([col+cols im_width])  - 1;
-
-  s = 0;
-  if (r1 >= 1) && (c1 >= 1); s = s + II(r1,c1); end
-  if (r1 >= 1) && (c2 >= 1); s = s - II(r1,c2); end
-  if (r2 >= 1) && (c1 >= 1); s = s - II(r2,c1); end
-  if (r2 >= 1) && (c2 >= 1); s = s + II(r2,c2); end
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-function II = make_integral_image(X)
-%% Calculate an integral image
-  II = zeros(size(X));
-  for row = 1:size(X,1);
-    for col = 1:size(X,2);
-      v = X(row,col);
-      if row > 1;
-        v = v + II(row-1,col);
-      end
-      if j > 1;
-        v = v + II(row,col-1);
-      end
-      if (col > 1) && (row > 1);
-        v = v - II(row-1,col-1);
-      end
-      II(row,col) = v;
-    end
-  end
 end
