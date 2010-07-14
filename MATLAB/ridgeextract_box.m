@@ -58,6 +58,10 @@ function R = find_ridge_segments(Lq, Lqq, step);
           continue;
         end
 
+        if n_edges >= 2;
+          break;
+        end
+
         % Interpolate zero-crossing
         delta = lq1 / (lq1 - lq2);
 
@@ -71,9 +75,6 @@ function R = find_ridge_segments(Lq, Lqq, step);
 
         % Check if we have too many edges already
         n_edges = n_edges + 1;
-        if n_edges > 2;
-          break;
-        end
 
         % Add crossing point
         edge_start = edge_defs(k,1:2)';
@@ -134,10 +135,10 @@ function [Lq, Lqq] = build_metrics_fast(II, f, step)
       Dyy = + boxintegral(II, r - b,     c - l + 1, f,  d2) ...
             - boxintegral(II, r - l2,    c - l + 1, l,  d2)*3;
 
-      Dxy = + boxintegral(II, r - l, c + 1, l, l) ...
-            + boxintegral(II, r + 1, c - l, l, l) ...
-            - boxintegral(II, r - l, c - l, l, l) ...
-            - boxintegral(II, r + 1, c + 1, l, l);
+      Dxy = - boxintegral(II, r - l, c + 1, l, l) ...
+            - boxintegral(II, r + 1, c - l, l, l) ...
+            + boxintegral(II, r - l, c - l, l, l) ...
+            + boxintegral(II, r + 1, c + 1, l, l);
 
       % Normalise filter responses
       Dx  = Dx  * inv_f2;
