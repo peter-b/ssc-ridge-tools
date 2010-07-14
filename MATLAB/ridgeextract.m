@@ -15,8 +15,8 @@ function [R, Y, G] = ridgeextract(X, scale, step)          % -*-Matlab-*-
 % Single-scale ridge extraction algorithm.  A ridge is defined as a
 % point for which the brightness assumes a maximum in the principal
 % direction of curvature.  If the (p,q) axes at a given point P are
-% defined as lieing parallel to the directions of principal
-% curvature, then P is classified as a ridge point if:
+% defined as lying parallel to the directions of principal curvature,
+% then P is classified as a ridge point if:
 %
 %    Lq = 0, Lqq < 0, Lqq >= Lpp
 %
@@ -53,7 +53,7 @@ function [R, Y, G] = ridgeextract(X, scale, step)          % -*-Matlab-*-
 %   formulation for 2-D and 3-D signals. Scale Space Methods in
 %   Computer Vision:132--147, 2003
 %
-% See also ridgeplot, ridgedemo.
+% See also ridgeplot.
 
 if (nargin < 3);
   % Very conservative downsampling.
@@ -68,31 +68,31 @@ n_ridge_lines = 0;
 R = zeros(2,2,256);
 G = zeros(256);
 
-%%%% Create low pass filter kernel
-%%
-%% This could be speeded up by using recursive self-convolution.
+% Create low pass filter kernel
+%
+% This could be speeded up by using recursive self-convolution.
 lpf_kern = DSS_KERNEL;
 for t = 1:(3*scale);
   lpf_kern = conv(lpf_kern, DSS_KERNEL);
 end
 
 
-%%%% LPF the image
+% LPF the image
 Y = conv2(lpf_kern, lpf_kern, X, 'same');
 
 
-%%%% Calculate 1st & 2nd partial differences
+% Calculate 1st & 2nd partial differences
 Dx = conv2(1, DIFF_KERNEL, Y, 'same');
 Dy = conv2(DIFF_KERNEL, 1, Y, 'same');
 Dxx = conv2(1, DIFF_KERNEL, Dx, 'same');
 Dyy = conv2(DIFF_KERNEL, 1, Dy, 'same');
 Dxy = conv2(DIFF_KERNEL, 1, Dx, 'same');
 
-%%%% Calculate metrics (Lq and Lqq)
-%%
-%% q is the unit vector in the most negative principal direction of
-%% curvature. Lq is the component of gradient in that direction, and Lqq
-%% is the corresponding curvature.
+% Calculate metrics (Lq and Lqq)
+%
+% q is the unit vector in the most negative principal direction of
+% curvature. Lq is the component of gradient in that direction, and Lqq
+% is the corresponding curvature.
 msize = ceil(size(Y)/step);
 Lq = zeros(msize);
 Lqq = zeros(msize);
@@ -102,39 +102,39 @@ for i = 1:msize(1);
   for j = 1:msize(2);
     si = (i-1)*step + 1;
     sj = (j-1)*step + 1;
-    %% Calculate curvatures at (i,j) using the eigenvalues of the
-    %% Hessian matrix. We choose the eigenvector corresponding with the
-    %% greatest curvature *magnitude* as the direction of interest, but
-    %% later we'll check that the eigenvalue is negative (what we care
-    %% about are ridges rather than troughs, i.e. we're looking for
-    %% maxima of value in the image).
+    % Calculate curvatures at (i,j) using the eigenvalues of the
+    % Hessian matrix. We choose the eigenvector corresponding with the
+    % greatest curvature *magnitude* as the direction of interest, but
+    % later we'll check that the eigenvalue is negative (what we care
+    % about are ridges rather than troughs, i.e. we're looking for
+    % maxima of value in the image).
     [V, L] = eig([Dxx(si,sj) Dxy(si,sj); Dxy(si,sj) Dyy(si,sj)]);
-    if abs(L(1,1)) > abs(L(2,2)); k = 1; else; k = 2; end
+    if abs(L(1,1)) > abs(L(2,2)); k = 1; else k = 2; end
     Lqq(i,j) = L(k,k);
 
-    %% Find component of gradient in principal direction of curvature
+    % Find component of gradient in principal direction of curvature
     q1 = V(1,k); q2 = V(2,k);
     Lq(i,j) = Dx(si,sj)*q1 + Dy(si,sj)*q2;
-    
+
     % Calculate A-gamma-norm metric
     Anorm(i,j) = scale^(2*GAMMA) * ...
         ((Dxx(si,sj) - Dyy(si,sj))^2 + 4*Dxy(si,sj)^2);
   end
 end
 
-%%%% Find and print out ridge segments.
-%%
-%% Consider a square of four pixels:
-%%
-%%         a --- b
-%%         |     |
-%%         |     |
-%%         c --- d
-%%
-%% Each of the four edges is checked to see if they contain a zero of
-%% Lq. If exactly two edges contain a zero of Lq, *and* neither of those
-%% edges has Lqq > 0 for at either end, interpolate the zero crossings
-%% in each edge and draw a ridge segment.
+% Find and print out ridge segments.
+%
+% Consider a square of four pixels:
+%
+%         a --- b
+%         |     |
+%         |     |
+%         c --- d
+%
+% Each of the four edges is checked to see if they contain a zero of
+% Lq. If exactly two edges contain a zero of Lq, *and* neither of those
+% edges has Lqq > 0 for at either end, interpolate the zero crossings
+% in each edge and draw a ridge segment.
 
 edge_defs = [0 0 1 0; 1 0 1 1; 1 1 0 1; 0 1 0 0];
 
@@ -188,7 +188,7 @@ for i = 1:(msize(1)-1);
       R = cat(3,R,zeros(size(R)));
       G = cat(3,G,zeros(size(G)));
     end
-    
+
     R(:,:,n_ridge_lines) = crossings;
     G(n_ridge_lines) = mean(norm_vals);
   end
@@ -197,6 +197,7 @@ end
 R = R(:,:,1:n_ridge_lines);
 G = G(1:n_ridge_lines);
 
+% If no output variables set, plot the results
 if nargout == 0;
   clf
   subplot(1,2,1);
