@@ -4,6 +4,11 @@ from collections import deque
 from mputils import shmem_copy, shmem_empty_like, shmem_as_ndarray
 import multiprocessing as mp
 
+# Approximates the derivative of the image.
+#
+# The derivative order along rows is determined by row_order, and
+# along columns by col_order.  If the dest argument is specified, it
+# determines the destination array for the results of the derivative.
 def derivative(image, row_order, col_order, dest=None):
     def deriv_filter(order):
         K = array([0.5, 0, -0.5], image.dtype);
@@ -100,6 +105,9 @@ class RidgeSegmentInfo:
         return self
 
 class RidgeExtraction:
+    # Sets up ridge extraction for image. If threads argument is
+    # specified, it determines the number of parallel processes used
+    # in calculations.
     def __init__(self, image, threads=None):
         # Set up shared memory matrices. We have to keep the
         # references to the multiprocessing.RawArray around, or things
@@ -157,6 +165,8 @@ class RidgeExtraction:
 
     # Check whether the edge joining start and end contains a ridge
     # point
+    #
+    # Worker function used by ridge_points() and ridge_segments().
     def ridge_on_edge(self,start, end):
         i = start
         j = end
@@ -186,6 +196,9 @@ class RidgeExtraction:
                               self.itp(x, i[1], j[1]))
 
     # Find ridge points
+    #
+    # Tests each row-wise and column-wise edge joining two adjacent
+    # pixels to check if it contains a zero of Lq with Lqq < 0.
     def ridge_points(self):
         for k in ndindex(self.image.shape[0] - 1, self.image.shape[1] - 1):
             r = self.ridge_on_edge (k, (k[0]+1, k[1]))
@@ -195,7 +208,17 @@ class RidgeExtraction:
             if (r != None):
                 yield r
 
-    # Find ridge segments
+    # Find ridge segments (cached version)
+    #
+    # Finds ridge segments by considering the squares formed by four
+    # adjacent pixels, and testing for zeros of Lq along the edges of
+    # each square.  If exactly two zeros are found, and they are
+    # associated with Lqq < 0, then a ridge segment is detected as
+    # joining them.
+    #
+    # The zeros along the previous row and column of pixels are
+    # cached, so that each zero of Lq is calculated only once. This
+    # speeds up the algorithm.
     def ridge_segments_cached(self):
         # Set up cache for ridge points in previous row/column
         last_row = [self.ridge_on_edge((0,x),(0,x+1))
@@ -234,6 +257,16 @@ class RidgeExtraction:
 
                 yield RidgeSegmentInfo(*edge_points)
 
+    # Find ridge segments (uncached version)
+    #
+    # Finds ridge segments by considering the squares formed by four
+    # adjacent pixels, and testing for zeros of Lq along the edges of
+    # each square.  If exactly two zeros are found, and they are
+    # associated with Lqq < 0, then a ridge segment is detected as
+    # joining them.
+    #
+    # This version of the algorithm is only used for verifying the
+    # behaviour ridge_segments_cached().
     def ridge_segments_uncached(self):
         EDGE_INFO = (((0,0),(0,1)),
                      ((0,0),(1,0)),
@@ -254,5 +287,7 @@ class RidgeExtraction:
             if len(edge_points) == 2:
                 yield RidgeSegmentInfo(*edge_points)
 
+    # By default, use cached version of ridge segment extraction
+    # algorithm.
     ridge_segments = ridge_segments_cached
 
