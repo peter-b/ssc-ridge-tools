@@ -54,8 +54,12 @@ def rtool_points(filename, scale=None, svg_file=None, output_file=None,
 
     image = load_and_scale(filename,scale)
 
+    if output_file != None:
+        out_fp = open(output_file, 'wb')
+    if svg_file != None:
+        svg, cr = start_svg(svg_file, image)
+
     # Extracting ridges
-    R = []
     for r in RidgeExtraction(image).ridge_points():
         # Cull step 2: value threshold
         if min_value != None:
@@ -67,29 +71,15 @@ def rtool_points(filename, scale=None, svg_file=None, output_file=None,
             if r.strength < min_strength:
                 continue
 
-        R.append(r)
-
-    # Create output CSV
-    if output_file != None:
-        fp = open(output_file, 'wb')
-        for r in R:
-            fp.write("%g, %g, %g, %g\n" % (r.col, r.row, r.value, r.strength))
-        fp.close()
-
-    # Create output SVG
-    if svg_file != None:
-        h = image.shape[0]
-        w = image.shape[1]
-
-        svg, cr = start_svg(svg_file, image)
-
-        def draw_point(x,y):
-            cr.arc(y, x, math.sqrt(1.0/math.pi), 0.0, 2*math.pi)
+        if output_file != None:
+            out_fp.write("%g, %g, %g, %g\n" % (r.col, r.row, r.value, r.strength))
+        if svg_file != None:
+            cr.arc(r.col, r.row, math.sqrt(1.0/math.pi), 0.0, 2*math.pi)
             cr.fill()
 
-        for r in R:
-            draw_point(r.row, r.col)
-
+    if output_file != None:
+        out_fp.close()
+    if svg_file != None:
         svg.finish()
 
 def rtool_segments(filename, scale=None, svg_file=None, output_file=None,
@@ -97,9 +87,13 @@ def rtool_segments(filename, scale=None, svg_file=None, output_file=None,
 
     image = load_and_scale(filename, scale)
 
+    if output_file != None:
+        out_fp = open(output_file, 'wb')
+    if svg_file != None:
+        svg, cr = start_svg(svg_file, image)
+
     # Extracting ridges. We use mean value and strength to implement
     # the cull thresholds.
-    R = []
     for r in RidgeExtraction(image).ridge_segments():
         # Cull step 2: value threshold
         r.value = (r.start.value + r.end.value)/2
@@ -114,29 +108,18 @@ def rtool_segments(filename, scale=None, svg_file=None, output_file=None,
             if r.strength < min_strength:
                 continue
 
-        R.append(r)
-
-    # Create output CSV
-    if output_file != None:
-        fp = open(output_file, 'wb')
-        for r in R:
-            fp.write("%g, %g, %g, %g, %g, %g\n" %
-                     (r.start.col, r.start.row, r.end.col, r.end.row,
-                      r.value, r.strength))
-        fp.close()
-
-    # Create output SVG
-    if svg_file != None:
-        svg, cr = start_svg(svg_file, image)
-
-        def draw_line(x1, y1, x2, y2):
-            cr.move_to(x1,y1)
-            cr.line_to(x2,y2)
+        if output_file != None:
+            out_fp.write("%g, %g, %g, %g, %g, %g\n" %
+                         (r.start.col, r.start.row, r.end.col, r.end.row,
+                          r.value, r.strength))
+        if svg_file != None:
+            cr.move_to(r.start.col, r.start.row)
+            cr.line_to(r.end.col, r.end.row)
             cr.stroke()
 
-        for r in R:
-            draw_line(r.start.col, r.start.row, r.end.col, r.end.row)
-
+    if output_file != None:
+        out_fp.close()
+    if svg_file != None:
         svg.finish()
 
 def rtool_lines(filename, scale=None, svg_file=None, output_file=None,
