@@ -1,6 +1,8 @@
 from numpy import *
 from scipy.ndimage.filters import convolve1d
 from collections import deque
+from mputils import shmem_copy, shmem_empty_like, shmem_as_ndarray
+import multiprocessing as mp
 
 def derivative(image, row_order, col_order, dest=None):
     def deriv_filter(order):
@@ -10,25 +12,73 @@ def derivative(image, row_order, col_order, dest=None):
             f = convolve(f, K)
         return f
 
+    # Create an output array if necessary
     if dest == None:
-        dest = empty_like(image)
+        result = empty_like(image)
+    else:
+        result = dest
 
+    # Carry out convolutions
     row_input = image
-    result = None
     if (col_order > 0):
         convolve1d(image, deriv_filter(col_order),
-                   output=dest, axis=1, mode='constant', cval=0)
-        row_input = dest
-        result = dest
+                   output=result, axis=1, mode='constant', cval=0)
+        row_input = result
     if (row_order > 0):
         convolve1d(row_input, deriv_filter(row_order),
-                   output=dest, axis=0, mode='constant', cval=0)
-        result = dest
+                   output=result, axis=0, mode='constant', cval=0)
 
-    if result == None: # No filtering, just copy over data
-        dest[:,:] = image
+    # If no convolutions perform, copy in image
+    if row_order == 0 and col_order == 0:
+        result[:] = image
 
     return result
+
+# Calculate ridge metrics for a region of the image
+#
+# Worker function for creating the metrics Dq and Dqq.  Note that the
+# Dq and Dqq arguments are modified by this function.  The start_row
+# and num_rows arguments determine which region of the image this
+# function works on.
+def _make_metrics(Dx, Dy,
+                  Dxx, Dyy, Dxy, Dq, Dqq,
+                  start_row=0, num_rows=None):
+
+    A = zeros((2,2), dtype=Dx.dtype)
+    if num_rows == None:
+        num_rows = Dx.shape[0]
+    for row,col in ndindex((num_rows, Dx.shape[1])):
+        k = (row+start_row, col)
+        A[0,0] = Dxx[k]
+        A[1,0] = Dxy[k]
+        A[0,1] = Dxy[k]
+        A[1,1] = Dyy[k]
+        w,v = linalg.eigh(A)
+
+        if abs(w[0]) > abs(w[1]):
+            dqq = w[0]
+            dq = v[0,0]*Dx[k] + v[1,0]*Dy[k]
+        else:
+            dqq = w[1]
+            dq = v[0,1]*Dx[k] + v[1,1]*Dy[k]
+
+        Dq[k] = dq
+        Dqq[k] = dqq
+
+# Multiprocess wrapper function for _make_metrics().
+def _mp_make_metrics(rows, cols,
+                     Dx, Dy,
+                     Dxx, Dyy, Dxy, Dq, Dqq,
+                     start_row, num_rows):
+    shape = (rows,cols)
+    _make_metrics(shmem_as_ndarray(Dx).reshape(shape),
+                  shmem_as_ndarray(Dy).reshape(shape),
+                  shmem_as_ndarray(Dxx).reshape(shape),
+                  shmem_as_ndarray(Dyy).reshape(shape),
+                  shmem_as_ndarray(Dxy).reshape(shape),
+                  shmem_as_ndarray(Dq).reshape(shape),
+                  shmem_as_ndarray(Dqq).reshape(shape),
+                  start_row, num_rows)
 
 class RidgePointInfo:
     def __init__(self, Dqq, Dxx, Dyy, Dxy, value, row, col):
@@ -50,41 +100,55 @@ class RidgeSegmentInfo:
         return self
 
 class RidgeExtraction:
+    def __init__(self, image, threads=None):
+        # Set up shared memory matrices. We have to keep the
+        # references to the multiprocessing.RawArray around, or things
+        # don't work properly. :-(
+        self.image, self.image_raw = shmem_copy(image)
+        self.Dx, self.Dx_raw = shmem_empty_like(image)
+        self.Dy, self.Dy_raw = shmem_empty_like(image)
+        self.Dxx, self.Dxx_raw = shmem_empty_like(image)
+        self.Dyy, self.Dyy_raw = shmem_empty_like(image)
+        self.Dxy, self.Dxy_raw = shmem_empty_like(image)
 
-    def __init__(self, image):
-        # Calculate directional derivatives
-        Dx = derivative(image, 1, 0)
-        Dy = derivative(image, 0, 1)
-        Dxx = derivative(Dx, 1, 0)
-        Dyy = derivative(Dy, 0, 1)
-        Dxy = derivative(Dx, 0, 1)
+        # Calculate directional derivatives.
+        derivative(self.image, 1, 0, dest=self.Dx)
+        derivative(self.image, 0, 1, dest=self.Dy)
+        derivative(self.Dx, 1, 0, dest=self.Dxx)
+        derivative(self.Dy, 0, 1, dest=self.Dyy)
+        derivative(self.Dx, 0, 1, dest=self.Dxy)
 
         # Calculate metrics
+        self.Dq, self.Dq_raw = shmem_empty_like(image)
+        self.Dqq, self.Dqq_raw = shmem_empty_like(image)
 
-        Dq = empty_like (image)
-        Dqq = empty_like (image)
+        if threads == None:
+            _make_metrics(self.Dx, self.Dy, self.Dxx, self.Dyy, self.Dxy,
+                         self.Dq, self.Dqq)
+        else:
+            # Multiprocessor magic happens here
+            n_rows = self.image.shape[0]
+            n_cols = self.image.shape[1]
+            def create_process(n):
+                start = (n * n_rows) / threads
+                end = ((n+1) * n_rows) / threads
+                length = end - start
+                mp_args = (n_rows, n_cols,
+                           self.Dx_raw, self.Dy_raw, self.Dxx_raw,
+                           self.Dyy_raw, self.Dxy_raw, self.Dq_raw,
+                           self.Dqq_raw, start, length)
+                mp_fun = _mp_make_metrics
+                return mp.Process(target=mp_fun, args=mp_args)
 
-        for k in ndindex(*image.shape):
-            A = array([[Dxx[k], Dxy[k]], [Dxy[k], Dyy[k]]])
-            w,v = linalg.eigh(A)
+            pool = [create_process(n) for n in range(threads)]
+            for p in pool: p.start()
+            for p in pool: p.join()
 
-            if abs(w[0]) > abs(w[1]):
-                dqq = w[0]
-                dq = v[0,0]*Dx[k] + v[1,0]*Dy[k]
-            else:
-                dqq = w[1]
-                dq = v[0,1]*Dx[k] + v[1,1]*Dy[k]
-
-            Dq[k] = dq
-            Dqq[k] = dqq
-
-        self.image = image
-        self.Dx = Dx
-        self.Dxx = Dxx
-        self.Dyy = Dyy
-        self.Dxy = Dxy
-        self.Dq = Dq
-        self.Dqq = Dqq
+        # Don't need to keep these around any more
+        del self.Dx
+        del self.Dx_raw
+        del self.Dy
+        del self.Dy_raw
 
     # Linear interpolation
     def itp(self, delta, a, b):

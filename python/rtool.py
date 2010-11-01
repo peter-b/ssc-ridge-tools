@@ -49,10 +49,8 @@ def start_svg(filename, image):
 
     return (svg, cr)
 
-def rtool_points(filename, scale=None, svg_file=None, output_file=None,
+def rtool_points(extractor, scale=None, svg_file=None, output_file=None,
                  min_strength=None, min_value=None):
-
-    image = load_and_scale(filename,scale)
 
     if output_file != None:
         out_fp = open(output_file, 'wb')
@@ -60,7 +58,7 @@ def rtool_points(filename, scale=None, svg_file=None, output_file=None,
         svg, cr = start_svg(svg_file, image)
 
     # Extracting ridges
-    for r in RidgeExtraction(image).ridge_points():
+    for r in extractor.ridge_points():
         # Cull step 2: value threshold
         if min_value != None:
             if r.value < min_value:
@@ -82,10 +80,8 @@ def rtool_points(filename, scale=None, svg_file=None, output_file=None,
     if svg_file != None:
         svg.finish()
 
-def rtool_segments(filename, scale=None, svg_file=None, output_file=None,
+def rtool_segments(extractor, scale=None, svg_file=None, output_file=None,
                    min_strength=None, min_value=None):
-
-    image = load_and_scale(filename, scale)
 
     if output_file != None:
         out_fp = open(output_file, 'wb')
@@ -94,7 +90,7 @@ def rtool_segments(filename, scale=None, svg_file=None, output_file=None,
 
     # Extracting ridges. We use mean value and strength to implement
     # the cull thresholds.
-    for r in RidgeExtraction(image).ridge_segments():
+    for r in extractor.ridge_segments():
         # Cull step 2: value threshold
         r.value = (r.start.value + r.end.value)/2
         if min_value != None:
@@ -122,10 +118,9 @@ def rtool_segments(filename, scale=None, svg_file=None, output_file=None,
     if svg_file != None:
         svg.finish()
 
-def rtool_lines(filename, scale=None, svg_file=None, output_file=None,
+def rtool_lines(extractor, scale=None, svg_file=None, output_file=None,
                 min_strength=None, min_value=None):
-
-    image = load_and_scale(filename, scale)
+    pass
 
 if __name__ == "__main__" :
     parser = OptionParser()
@@ -140,19 +135,30 @@ if __name__ == "__main__" :
                       help="filename for SVG output")
     parser.add_option("-o", "--output",
                       help="filename for ridge CSV output")
+    parser.add_option("-t", "--threads", type="int",
+                      help="number of threads to use")
 
     (options, args) = parser.parse_args()
     if len(args) != 1:
         parser.error("incorrect number of arguments")
+    filename = args[0]
+
+    # Load image
+    image = load_and_scale(filename, options.scale)
+
+    # Create ridge extractor
+    extractor = RidgeExtraction(image, options.threads)
 
     if options.points:
-        rtool_points(args[0], scale=options.scale,
+        rtool_points(extractor=extractor,
+                     scale=options.scale,
                      svg_file=options.svg,
                      output_file=options.output,
                      min_strength=options.min_strength,
                      min_value=options.min_value)
     else:
-        rtool_segments(args[0], scale=options.scale,
+        rtool_segments(extractor=extractor,
+                       scale=options.scale,
                        svg_file=options.svg,
                        output_file=options.output,
                        min_strength=options.min_strength,
