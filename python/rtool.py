@@ -1,6 +1,7 @@
 from ridgeextract import *
 from scalespace import *
 from tifffile import TIFFfile
+from PIL import Image
 import cairo, math
 from optparse import OptionParser
 
@@ -49,13 +50,21 @@ def start_svg(filename, image):
 
     return (svg, cr)
 
-def rtool_points(extractor, scale=None, svg_file=None, output_file=None,
-                 min_strength=None, min_value=None):
+def start_png(image):
+    h = image.shape[0]
+    w = image.shape[1]
+    im = Image.new("1", (w, h))
+    return im
+
+def rtool_points(extractor, scale=None, svg_file=None, png_file=None,
+                 output_file=None, min_strength=None, min_value=None):
 
     if output_file != None:
         out_fp = open(output_file, 'wb')
     if svg_file != None:
         svg, cr = start_svg(svg_file, image)
+    if png_file != None:
+        png = start_png(image);
 
     # Extracting ridges
     for r in extractor.ridge_points():
@@ -74,19 +83,27 @@ def rtool_points(extractor, scale=None, svg_file=None, output_file=None,
         if svg_file != None:
             cr.arc(r.col, r.row, math.sqrt(1.0/math.pi), 0.0, 2*math.pi)
             cr.fill()
+        if png_file != None:
+            png.im.putpixel((int(floor(r.col)),int(floor(r.row))), 256)
+            png.im.putpixel((int(ceil(r.col)),int(ceil(r.row))), 256)
+
 
     if output_file != None:
         out_fp.close()
     if svg_file != None:
         svg.finish()
+    if png_file != None:
+        png.save(png_file, "PNG")
 
-def rtool_segments(extractor, scale=None, svg_file=None, output_file=None,
-                   min_strength=None, min_value=None):
+def rtool_segments(extractor, scale=None, svg_file=None, png_file=None,
+                   output_file=None, min_strength=None, min_value=None):
 
     if output_file != None:
         out_fp = open(output_file, 'wb')
     if svg_file != None:
         svg, cr = start_svg(svg_file, image)
+    if png_file != None:
+        png = start_png(image);
 
     # Extracting ridges. We use mean value and strength to implement
     # the cull thresholds.
@@ -112,11 +129,16 @@ def rtool_segments(extractor, scale=None, svg_file=None, output_file=None,
             cr.move_to(r.start.col, r.start.row)
             cr.line_to(r.end.col, r.end.row)
             cr.stroke()
+        if png_file != None:
+            png.im.putpixel((int(floor(r.start.col)),int(floor(r.start.row))),
+                            256)
 
     if output_file != None:
         out_fp.close()
     if svg_file != None:
         svg.finish()
+    if png_file != None:
+        png.save(png_file, "PNG")
 
 def rtool_lines(extractor, scale=None, svg_file=None, output_file=None,
                 min_strength=None, min_value=None):
@@ -133,6 +155,8 @@ if __name__ == "__main__" :
                       help="Min value of extracted ridges")
     parser.add_option("--svg",
                       help="filename for SVG output")
+    parser.add_option("--png",
+                      help="filename for PNG output")
     parser.add_option("-o", "--output",
                       help="filename for ridge CSV output")
     parser.add_option("-t", "--threads", type="int",
@@ -153,6 +177,7 @@ if __name__ == "__main__" :
         rtool_points(extractor=extractor,
                      scale=options.scale,
                      svg_file=options.svg,
+                     png_file=options.png,
                      output_file=options.output,
                      min_strength=options.min_strength,
                      min_value=options.min_value)
@@ -160,6 +185,7 @@ if __name__ == "__main__" :
         rtool_segments(extractor=extractor,
                        scale=options.scale,
                        svg_file=options.svg,
+                       png_file=options.png,
                        output_file=options.output,
                        min_strength=options.min_strength,
                        min_value=options.min_value)
