@@ -1,0 +1,5 @@
+*.o
+*~
+show-tiff
+ridgetool
+qr-symmv
