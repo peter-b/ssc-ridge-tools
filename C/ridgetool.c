@@ -11,7 +11,12 @@
 #include "ridgetool.h"
 #include "ridgetool_gui.h"
 
-#define GETOPT_OPTIONS "s:t:M:vh"
+#define GETOPT_OPTIONS "spt:m:j:M:h"
+
+enum {
+  MODE_SEGMENTS,
+  MODE_POINTS,
+};
 
 static void
 usage (char *name, int status)
@@ -21,10 +26,12 @@ usage (char *name, int status)
 "\n"
 "Scale-space image ridge extraction tool.\n"
 "\n"
-"  -s SCALES       Specify a single scale or a range of scales\n"
-"  -t THREADS      Number of multiprocessing threads to use [default %i]\n"
+"  -s              Extract ridge segments [default mode]\n"
+"  -p              Extract ridge points\n"
+"  -t SCALES       Specify a single scale or a range of scales\n"
+"  -m NORM         Strength metric to use (A, M or N) [default N]\n"
+"  -j THREADS      Number of multiprocessing threads to use [default %i]\n"
 "  -M FILENAME     Output mask file showing locations of ridges\n"
-"  -v              Display result\n"
 "  -h              Display this message and exit\n"
 "\n"
 "Please report bugs to p.brett@surrey.ac.uk\n",
@@ -99,28 +106,47 @@ main (int argc, char **argv)
   Surface *image = NULL;
   Surface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   Surface *mask = NULL;
+  RidgePointsSS *ridges = NULL;
   Filter *filt;
   int c, i;
   int n_scales = 0;
   float *scales = NULL;;
   int show_result = 0;
   int status;
+  int mode = MODE_SEGMENTS;
+  int metric = METRICS_NNORM;
 
   /* Parse command-line arguments */
   while ((c = getopt (argc, argv, GETOPT_OPTIONS)) != -1) {
     switch (c) {
     case 's':
+      mode = MODE_SEGMENTS;
+      break;
+    case 'p':
+      mode = MODE_POINTS;
+      break;
+    case 't':
       status = parse_scales (optarg, &n_scales, &scales);
       if (!status) {
-        fprintf (stderr, "ERROR: Bad argument '%s' to -s option.\n\n",
+        fprintf (stderr, "ERROR: Bad argument '%s' to -t option.\n\n",
                  optarg);
         usage (argv[0], 1);
       }
       break;
-    case 't':
+    case 'm':
+      switch (optarg[0]) {
+      case 'A': metric = METRICS_ANORM; break;
+      case 'M': metric = METRICS_MNORM; break;
+      case 'N': metric = METRICS_NNORM; break;
+      default:
+        fprintf (stderr, "ERROR: Bad argument '%s' to -m option.\n\n",
+                 optarg);
+        usage (argv[0], 1);
+      }
+    case 'j':
       status = sscanf (optarg, "%i", &multiproc_threads);
       if (status != 1) {
-        fprintf (stderr, "ERROR: Bad argument '%s' to -t option.\n\n",
+        fprintf (stderr, "ERROR: Bad argument '%s' to -j option.\n\n",
                  optarg);
         usage (argv[0], 1);
       }
@@ -174,7 +200,7 @@ main (int argc, char **argv)
   gtk_init (&argc, &argv);
   image = surface_from_tiff (filename);
 
-  /* Create single-scale mask for lowest scale requested. */
+  /* Create single-scale metrics for lowest scale requested. */
   filt = filter_new_gaussian (scales[0]);
   if (filt) {
     MP_filter (filt, image, image, FILTER_FLAG_ROWS | FILTER_FLAG_COLS);
@@ -183,14 +209,28 @@ main (int argc, char **argv)
 
   MP_metrics_SS (image, scales[0], METRICS_NNORM, &Lp, &Lpp, &RnormL);
 
-  if (mask_filename != NULL) {
-    MP_ridge_mask_SS (Lp, Lpp, &mask);
-    surface_to_tiff (mask, mask_filename);
-  }
+  /* Find ridge points */
+  ridges = ridge_points_SS_new_for_surface (image);
+  MP_ridge_points_SS (ridges, Lp, Lpp);
 
-  if (show_result) {
-    MP_ridge_mask_SS (Lp, Lpp, &mask);
-    show_surface_dialog (mask, 1);
+  /* Generate outputs */
+  switch (mode) {
+  case MODE_POINTS:
+    if (mask_filename != NULL) {
+      mask = surface_new_like (image);
+      ridge_points_SS_to_points_mask (ridges, mask);
+      surface_to_tiff (mask, mask_filename);
+    }
+    break;
+  case MODE_SEGMENTS:
+    if (mask_filename != NULL) {
+      mask = surface_new_like (image);
+      ridge_points_SS_to_segments_mask (ridges, mask);
+      surface_to_tiff (mask, mask_filename);
+    }
+    break;
+  default:
+    break;
   }
 
   free (scales);
@@ -199,6 +239,8 @@ main (int argc, char **argv)
   surface_destroy (Lpp);
   surface_destroy (RnormL);
   surface_destroy (mask);
+
+  ridge_points_SS_destroy (ridges);
 
   return 0;
 }

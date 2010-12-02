@@ -87,7 +87,34 @@ enum {
 void MP_metrics_SS (Surface *src, float scale, int norm,
                     Surface **Lp, Surface **Lpp, Surface **RnormL);
 
-void MP_ridge_mask_SS (Surface *Lp, Surface *Lpp, Surface **mask);
+typedef struct _RidgePointsSS RidgePointsSS;
+typedef struct _RidgePointsSSEntry RidgePointsSSEntry;
+
+enum {
+  EDGE_FLAG_NORTH = 1 << 0,
+  EDGE_FLAG_WEST = 1 << 1,
+  EDGE_FLAG_SOUTH = 1 << 2,
+  EDGE_FLAG_EAST = 1 << 3,
+};
+
+struct _RidgePointsSSEntry {
+  unsigned char flags;
+  unsigned char north;
+  unsigned char west;
+  unsigned char padding;
+};
+
+struct _RidgePointsSS {
+  int rows, cols;
+  RidgePointsSSEntry *entries;
+};
+
+RidgePointsSS *ridge_points_SS_new_for_surface (Surface *s);
+void MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp);
+void ridge_points_SS_destroy (RidgePointsSS *r);
+
+void ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, Surface *mask);
+void ridge_points_SS_to_points_mask (RidgePointsSS *ridges, Surface *mask);
 
 /* -------------------------------------------------------------------------- */
 

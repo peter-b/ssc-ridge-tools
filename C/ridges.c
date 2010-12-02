@@ -1,10 +1,12 @@
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include "ridgetool.h"
 
-struct MPRidgeMaskSSInfo
+struct MPRidgeSegMaskSSInfo
 {
   Surface *Lp, *Lpp, *mask;
 };
@@ -17,7 +19,17 @@ LINTERP (float d, float x, float y)
   return (1-d)*x + d*y;
 }
 
-static float
+static inline unsigned int
+count_bits_set (unsigned int v)
+{
+  unsigned int c;
+  v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
+  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
+  c = (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
+  return c;
+}
+
+static inline float
 test_edge_SS (Surface *Lp, Surface *Lpp, int row, int col, int drow, int dcol)
 {
   float lp1 = SURFACE_REF (Lp, row, col);
@@ -40,48 +52,142 @@ test_edge_SS (Surface *Lp, Surface *Lpp, int row, int col, int drow, int dcol)
   return x;
 }
 
-static void
-MP_ridge_mask_SS_func (int thread_num, int thread_count, void *user_data)
+void
+ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, Surface *mask)
 {
-  struct MPRidgeMaskSSInfo *info = (struct MPRidgeMaskSSInfo *) user_data;
-  int first_row, num_rows, row, col;
+  assert (mask->cols == ridges->cols);
+  assert (mask->rows == ridges->rows);
 
-  first_row = thread_num * (info->Lp->rows / thread_count);
-  num_rows = (thread_num + 1) * (info->Lp->rows / thread_count) - first_row;
-
-  for (row = first_row; row < first_row + num_rows; row++) {
-    for (col = 0; col < info->Lp->rows; col++) {
-      int n_edges = 0;
-
-      /* First handle the case that this square is at the bottom or
-       * right of the image. */
-      if ((col + 1 >= info->Lp->cols) || (row + 1 >= info->Lp->rows)) {
-        SURFACE_REF (info->mask, row, col) = 0;
-        continue;
-      }
-
-      /* Evil (look, ma, no branches!) */
-      n_edges += (test_edge_SS (info->Lp, info->Lpp, row, col, 0, 1) >= 0);
-      n_edges += (test_edge_SS (info->Lp, info->Lpp, row, col, 1, 0) >= 0);
-      n_edges += (test_edge_SS (info->Lp, info->Lpp, row+1, col, 0, 1) >= 0);
-      n_edges += (test_edge_SS (info->Lp, info->Lpp, row, col+1, 1, 0) >= 0);
-
-      SURFACE_REF (info->mask, row, col) = (float) (n_edges == 2);
+  for (int row = 0; row < mask->rows; row++) {
+    for (int col = 0; col < mask->cols; col++) {
+      unsigned char flags = ridges->entries[row * ridges->cols + col].flags;
+      SURFACE_REF (mask, row, col) = (count_bits_set (flags) == 2);
     }
   }
 }
 
 void
-MP_ridge_mask_SS (Surface *Lp, Surface *Lpp, Surface **mask)
+ridge_points_SS_to_points_mask (RidgePointsSS *ridges, Surface *mask)
 {
-  struct MPRidgeMaskSSInfo *info = malloc (sizeof (struct MPRidgeMaskSSInfo));
+  assert (mask->cols == ridges->cols);
+  assert (mask->rows == ridges->rows);
 
+  for (int row = 0; row < mask->rows; row++) {
+    for (int col = 0; col < mask->cols; col++) {
+      unsigned char flags = ridges->entries[row * ridges->cols + col].flags;
+      SURFACE_REF (mask, row, col) =
+        ((flags & (EDGE_FLAG_NORTH | EDGE_FLAG_WEST)) > 0);
+    }
+  }
+}
+
+RidgePointsSS *
+ridge_points_SS_new_for_surface (Surface *s)
+{
+  RidgePointsSS *result = malloc (sizeof (RidgePointsSS));
+  size_t size = sizeof (RidgePointsSSEntry) * s->rows * s->cols;
+  result->rows = s->rows;
+  result->cols = s->cols;
+  result->entries = malloc (size);
+  memset (result->entries, 0, size);
+  return result;
+}
+
+struct MPRidgePointsSSInfo
+{
+  RidgePointsSS *ridges;
+  Surface *Lp, *Lpp;
+};
+
+static void
+MP_ridge_points_SS_create_func (int thread_num, int thread_count, void *user_data)
+{
+  struct MPRidgePointsSSInfo *info = (struct MPRidgePointsSSInfo *) user_data;
+  int first_row, num_rows, row, col;
+  unsigned char *prev_row = malloc (info->ridges->cols);
+
+  first_row = thread_num * (info->Lp->rows / thread_count);
+  num_rows = (thread_num + 1) * (info->Lp->rows / thread_count) - first_row;
+
+  /* First populate previous row buffer */
+  for (col = 0; col < info->ridges->cols; col++) {
+    float v = test_edge_SS (info->Lp, info->Lpp, first_row, col, 0, 1);
+    prev_row[col] = (v < 0) ? 255 : rintf (v * 128);
+  }
+
+  /* Now find ridges */
+  for (row = first_row; row < first_row + num_rows; row++) {
+    unsigned char prev_col = 255;
+    if (row + 1 < info->Lp->rows) {
+      float v = test_edge_SS (info->Lp, info->Lpp, row, 0, 1, 0);
+      prev_col = (v < 0) ? 255 : rintf (v * 128);
+    }
+
+    for (col = 0; col < info->ridges->cols; col++) {
+      RidgePointsSSEntry *entry =
+        info->ridges->entries + row * info->ridges->cols + col;
+
+      /* North */
+      if (prev_row[col] != 255) {
+        entry->flags |= EDGE_FLAG_NORTH;
+      }
+      entry->north = prev_row[col];
+
+      /* West */
+      if (prev_col != 255) {
+        entry->flags |= EDGE_FLAG_WEST;
+      }
+      entry->west = prev_col;
+
+
+      prev_row[col] = 255;
+      prev_col = 255;
+      if ((row + 1 < info->Lp->rows) && (col + 1 < info->Lp->cols)) {
+        float v;
+
+        /* South */
+        v = test_edge_SS (info->Lp, info->Lpp, row+1, col, 0, 1);
+        if (v >= 0) {
+          entry->flags |= EDGE_FLAG_SOUTH;
+          prev_row[col] = rintf (v * 128);
+        }
+
+        /* East */
+        v = test_edge_SS (info->Lp, info->Lpp, row, col+1, 1, 0);
+        if (v >= 0) {
+          entry->flags |= EDGE_FLAG_EAST;
+          prev_col = rintf (v * 128);
+        }
+      }
+    }
+  }
+
+  free (prev_row);
+}
+
+void
+MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp)
+{
+  struct MPRidgePointsSSInfo *info;
+
+  assert (ridges);
+  assert (Lp);
+  assert (Lpp);
+
+  info = malloc (sizeof (struct MPRidgePointsSSInfo));
+  info->ridges = ridges;
   info->Lp = Lp;
   info->Lpp = Lpp;
-  info->mask = surface_new_like (Lp);
 
-  MP_task (MP_ridge_mask_SS_func, (void *) info);
+  MP_task (MP_ridge_points_SS_create_func, (void *) info);
 
-  *mask = info->mask;
   free (info);
+}
+
+void
+ridge_points_SS_destroy (RidgePointsSS *r)
+{
+  if (!r) return;
+  free (r->entries);
+  free (r);
 }
