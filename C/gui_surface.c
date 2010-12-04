@@ -72,7 +72,7 @@ image_widget_expose_event (GtkWidget *widget, GdkEventExpose *event,
   double w, h, s;
 
   /* Calculate scale factor */
-  gtk_widget_get_allocation (widget, &allocation);
+  allocation = widget->allocation;
   w = ((double) allocation.width) / cairo_image_surface_get_width (img);
   h = ((double) allocation.height) / cairo_image_surface_get_height (img);
   s = (h < w) ? h : w;
