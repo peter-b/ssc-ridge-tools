@@ -19,16 +19,6 @@ LINTERP (float d, float x, float y)
   return (1-d)*x + d*y;
 }
 
-static inline unsigned int
-count_bits_set (unsigned int v)
-{
-  unsigned int c;
-  v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
-  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
-  c = (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
-  return c;
-}
-
 static inline float
 test_edge_SS (Surface *Lp, Surface *Lpp, int row, int col, int drow, int dcol)
 {

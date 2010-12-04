@@ -6,17 +6,18 @@
 #include <math.h>
 #include <assert.h>
 #include <cairo.h>
+#include <cairo-svg.h>
 #include <gtk/gtk.h>
 
 #include "ridgetool.h"
 #include "ridgetool_gui.h"
 
-#define GETOPT_OPTIONS "spt:m:j:M:h"
-
 enum {
   MODE_SEGMENTS,
   MODE_POINTS,
 };
+
+#define GETOPT_OPTIONS "spt:m:j:M:S:h"
 
 static void
 usage (char *name, int status)
@@ -31,7 +32,8 @@ usage (char *name, int status)
 "  -t SCALES       Specify a single scale or a range of scales\n"
 "  -m NORM         Strength metric to use (A, M or N) [default N]\n"
 "  -j THREADS      Number of multiprocessing threads to use [default %i]\n"
-"  -M FILENAME     Output mask file showing locations of ridges\n"
+"  -M FILENAME     Output TIFF mask showing locations of ridges\n"
+"  -S FILENAME     Output SVG file showing locations of ridges\n"
 "  -h              Display this message and exit\n"
 "\n"
 "Please report bugs to p.brett@surrey.ac.uk\n",
@@ -102,7 +104,7 @@ scale_compar (const void *a, const void *b)
 int
 main (int argc, char **argv)
 {
-  char *filename, *mask_filename = NULL;;
+  char *filename, *mask_filename = NULL, *svg_filename = NULL;
   Surface *image = NULL;
   Surface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   Surface *mask = NULL;
@@ -154,6 +156,9 @@ main (int argc, char **argv)
     case 'M':
       mask_filename = optarg;
       break;
+    case 'S':
+      svg_filename = optarg;
+      break;
     case 'v':
       show_result = 1;
       break;
@@ -196,8 +201,7 @@ main (int argc, char **argv)
   }
   n_scales -= (c-i-1);
 
-  /* Initialise GTK and load image */
-  gtk_init (&argc, &argv);
+  /* Load image */
   image = surface_from_tiff (filename);
 
   /* Create single-scale metrics for lowest scale requested. */
@@ -216,6 +220,7 @@ main (int argc, char **argv)
   /* Generate outputs */
   switch (mode) {
   case MODE_POINTS:
+    /* Point mask output */
     if (mask_filename != NULL) {
       mask = surface_new_like (image);
       ridge_points_SS_to_points_mask (ridges, mask);
@@ -223,10 +228,25 @@ main (int argc, char **argv)
     }
     break;
   case MODE_SEGMENTS:
+    /* Segment mask output */
     if (mask_filename != NULL) {
       mask = surface_new_like (image);
       ridge_points_SS_to_segments_mask (ridges, mask);
       surface_to_tiff (mask, mask_filename);
+    }
+    /* Segment SVG output */
+    if (svg_filename != NULL) {
+      cairo_surface_t *svg_surface =
+        cairo_svg_surface_create (svg_filename, image->cols, image->rows);
+      cairo_t *cr = cairo_create (svg_surface);
+      cairo_set_source_rgb (cr, 1, 1, 1);
+      cairo_paint (cr);
+      cairo_set_line_width (cr, 1);
+      cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+      cairo_set_source_rgb (cr, 0, 0, 0);
+      ridge_points_SS_draw_segments (cr, ridges);
+      cairo_destroy (cr);
+      cairo_surface_destroy (svg_surface);
     }
     break;
   default:

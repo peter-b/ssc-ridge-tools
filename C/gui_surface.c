@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "ridgetool.h"
+#include "ridgetool_gui.h"
 
 
 cairo_surface_t *

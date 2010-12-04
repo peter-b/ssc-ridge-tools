@@ -14,7 +14,8 @@ ridgetool_SOURCES = \
 	multiproc.c \
 	ridges.c \
 	surface.c \
-	gui_surface.c
+	gui_surface.c \
+	gui_ridges.c
 
 qr_symmv_SOURCES = \
 	qr-symmv.c \

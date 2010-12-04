@@ -149,4 +149,14 @@ void
 eigen_symm2x2 (float A11, float A12, float A22, float *l1, float *l2,
                float *e11, float *e12, float *e21, float *e22);
 
+static inline unsigned int
+count_bits_set (unsigned int v)
+{
+  unsigned int c;
+  v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
+  v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
+  c = (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
+  return c;
+}
+
 #endif /* !__RIDGETOOL_H__ */
