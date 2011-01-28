@@ -1,9 +1,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include <valgrind/memcheck.h>
 
 #include "ridgetool.h"
 
@@ -53,4 +56,25 @@ MP_task (void (*func)(int, int, void *), void *user_data)
 
   free (child_pids);
   return success;
+}
+
+void *
+MP_malloc (size_t size)
+{
+  size_t len = size + sizeof (size_t);
+  size_t *mptr = mmap (NULL, len, PROT_READ | PROT_WRITE,
+                       MAP_SHARED | MAP_ANONYMOUS, 0, 0);
+  if (mptr == MAP_FAILED) return NULL;
+  VALGRIND_MAKE_MEM_UNDEFINED (mptr, len);
+  return (void *) (mptr + 1);
+}
+
+void
+MP_free (void *ptr)
+{
+  if (ptr == NULL) return;
+  size_t *mptr = ((size_t *) ptr) - 1;
+  size_t len = *mptr;
+  munmap (mptr, len);
+  VALGRIND_MAKE_MEM_NOACCESS (ptr, len);
 }

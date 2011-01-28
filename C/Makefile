@@ -22,6 +22,7 @@ qr_symmv_SOURCES = \
 	eigen.c \
 
 show_tiff_SOURCES = \
+	multiproc.c \
 	show-tiff.c \
 	surface.c \
 	gui_surface.c

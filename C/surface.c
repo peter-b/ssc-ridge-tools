@@ -14,11 +14,7 @@ surface_new (int rows, int cols) {
   size_t len = rows * cols * sizeof (float);
   result->rows = rows;
   result->cols = cols;
-  result->data = mmap (NULL, len,
-                       PROT_READ | PROT_WRITE,
-                       MAP_SHARED | MAP_ANONYMOUS, 0, 0);
-  assert (result->data != MAP_FAILED);
-  VALGRIND_MAKE_MEM_UNDEFINED (result->data, len);
+  result->data = MP_malloc (len);
   return result;
 }
 
@@ -30,11 +26,8 @@ surface_new_like (Surface *s) {
 void
 surface_destroy (Surface *s)
 {
-  size_t len;
   if (!s) return;
-  len = s->rows * s->cols * sizeof (float);
-  munmap (s->data, len);
-  VALGRIND_MAKE_MEM_NOACCESS (s->data, len);
+  MP_free (s->data);
   free (s);
 }
 

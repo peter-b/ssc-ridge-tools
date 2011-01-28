@@ -211,7 +211,10 @@ main (int argc, char **argv)
     filter_destroy (filt);
   }
 
-  MP_metrics_SS (image, scales[0], METRICS_NNORM, &Lp, &Lpp, &RnormL);
+  Lp = surface_new_like (image);
+  Lpp = surface_new_like (image);
+  RnormL = surface_new_like (image);
+  MP_metrics_SS (image, scales[0], METRICS_NNORM, Lp, Lpp, RnormL);
 
   /* Find ridge points */
   ridges = ridge_points_SS_new_for_surface (image);

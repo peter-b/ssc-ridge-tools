@@ -11,14 +11,14 @@ struct MPMetricsSSInfo {
   float scale;
 };
 
-static float
+float
 metric_Mnorm (float Lpp, float Lqq, float scale)
 {
   /* normalised maximum absolute principal curvature */
   return scale * fmaxf (fabsf (Lpp), fabsf (Lqq));
 }
 
-static float
+float
 metric_Nnorm (float Lpp, float Lqq, float scale)
 {
   /* square of normalised square principal curvature difference */
@@ -27,7 +27,7 @@ metric_Nnorm (float Lpp, float Lqq, float scale)
   return t2*t2 * d*d;
 }
 
-static float
+float
 metric_Anorm (float Lpp, float Lqq, float scale)
 {
   /* square of normalised principal curvature difference */
@@ -48,6 +48,7 @@ MP_metrics_SS_func (int thread_num, int threadcount,
 
   for (row = first_row; row < first_row + num_rows; row++) {
     for (col = 0; col < info->RnormL->rows; col++) {
+      float lpp;
       /* Find principal curvatures */
       eigen_symm2x2 (SURFACE_REF (info->Dyy, row, col),
                      SURFACE_REF (info->Dxy, row, col),
@@ -56,46 +57,49 @@ MP_metrics_SS_func (int thread_num, int threadcount,
 
       /* Choose best direction and calculate Lp and Lpp */
       if (fabsf (l1) > fabsf (l2)) {
-        SURFACE_REF (info->Lpp, row, col) = l1;
+        lpp = l1;
         e1 = e11; e2 = e12;
       } else {
-        SURFACE_REF (info->Lpp, row, col) = l2;
+        lpp = l2;
         e1 = e21; e2 = e22;
       }
-      SURFACE_REF (info->Lp, row, col) =
-        (e1 * SURFACE_REF (info->Dy, row, col)
-         + e2 * SURFACE_REF (info->Dx, row, col));
+
+      if (info->Lpp) SURFACE_REF (info->Lpp, row, col) = lpp;
+      if (info->Lp) {
+        SURFACE_REF (info->Lp, row, col) =
+          (e1 * SURFACE_REF (info->Dy, row, col)
+           + e2 * SURFACE_REF (info->Dx, row, col));
+      }
 
       /* Calculate ridge strength metric */
-      SURFACE_REF (info->RnormL, row, col) =
-        info->norm_func (l1, l2, info->scale);
+      if (info->RnormL) {
+        SURFACE_REF (info->RnormL, row, col) =
+          info->norm_func (l1, l2, info->scale);
+      }
     }
   }
 }
 
 void
 MP_metrics_SS (Surface *src, float scale, int norm,
-               Surface **Lp, Surface **Lpp, Surface **RnormL)
+               Surface *Lp, Surface *Lpp, Surface *RnormL)
 {
   Filter *deriv;
   struct MPMetricsSSInfo *info;
 
   assert (src);
-  assert (Lp);
-  assert (Lpp);
-  assert (RnormL);
 
   /* Setup job info structure */
   info = malloc (sizeof (struct MPMetricsSSInfo));
 
+  info->Lp     = Lp;
+  info->Lpp    = Lpp;
+  info->RnormL = RnormL;
   info->Dx     = surface_new_like (src);
   info->Dy     = surface_new_like (src);
   info->Dxx    = surface_new_like (src);
   info->Dyy    = surface_new_like (src);
   info->Dxy    = surface_new_like (src);
-  info->Lp     = surface_new_like (src);
-  info->Lpp    = surface_new_like (src);
-  info->RnormL = surface_new_like (src);
   info->scale  = scale;
   switch (norm) {
   case METRICS_ANORM:
@@ -124,11 +128,6 @@ MP_metrics_SS (Surface *src, float scale, int norm,
 
   /* Do metrics generation */
   MP_task (MP_metrics_SS_func, (void *) info);
-
-  /* Set result pointers */
-  *Lp = info->Lp;
-  *Lpp = info->Lpp;
-  *RnormL = info->RnormL;
 
   /* Clean up */
   surface_destroy (info->Dx);

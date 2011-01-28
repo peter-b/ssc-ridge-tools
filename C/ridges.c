@@ -75,12 +75,20 @@ RidgePointsSS *
 ridge_points_SS_new_for_surface (Surface *s)
 {
   RidgePointsSS *result = malloc (sizeof (RidgePointsSS));
-  size_t size = sizeof (RidgePointsSSEntry) * s->rows * s->cols;
+  size_t len = sizeof (RidgePointsSSEntry) * s->rows * s->cols;
   result->rows = s->rows;
   result->cols = s->cols;
-  result->entries = malloc (size);
-  memset (result->entries, 0, size);
+  result->entries = MP_malloc (len);
+  memset (result->entries, 0, len);
   return result;
+}
+
+void
+ridge_points_SS_destroy (RidgePointsSS *r)
+{
+  if (!r) return;
+  MP_free (r->entries);
+  free (r);
 }
 
 struct MPRidgePointsSSInfo
@@ -172,12 +180,4 @@ MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp)
   MP_task (MP_ridge_points_SS_create_func, (void *) info);
 
   free (info);
-}
-
-void
-ridge_points_SS_destroy (RidgePointsSS *r)
-{
-  if (!r) return;
-  free (r->entries);
-  free (r);
 }

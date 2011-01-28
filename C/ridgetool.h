@@ -84,8 +84,12 @@ enum {
   METRICS_ANORM = 3,
 };
 
+float metric_Mnorm (float Lpp, float Lqq, float scale);
+float metric_Nnorm (float Lpp, float Lqq, float scale);
+float metric_Anorm (float Lpp, float Lqq, float scale);
+
 void MP_metrics_SS (Surface *src, float scale, int norm,
-                    Surface **Lp, Surface **Lpp, Surface **RnormL);
+                    Surface *Lp, Surface *Lpp, Surface *RnormL);
 
 typedef struct _RidgePointsSS RidgePointsSS;
 typedef struct _RidgePointsSSEntry RidgePointsSSEntry;
@@ -134,6 +138,9 @@ typedef void (*MultiProcFunc)(int threadnum, int threadcount, void *user_data);
  * passing it user_data.  If multiproc_threads is less than 2, does
  * runs func in the current thread. */
 int MP_task (MultiProcFunc func, void *user_data);
+
+void *MP_malloc (size_t size);
+void MP_free (void *ptr);
 
 /* -------------------------------------------------------------------------- */
 
