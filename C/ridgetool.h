@@ -122,6 +122,36 @@ void ridge_points_SS_to_points_mask (RidgePointsSS *ridges, Surface *mask);
 
 /* -------------------------------------------------------------------------- */
 
+typedef struct _RidgeLinesSS RidgeLinesSS;
+typedef union _RidgeLinesSSEntry RidgeLinesSSEntry;
+
+union _RidgeLinesSSEntry {
+  /* Set member form */
+  struct {
+      RidgeLinesSSEntry *parent;
+      unsigned long long rank;
+  } v;
+  /* Doubly-linked list member form */
+  struct {
+    RidgeLinesSSEntry *next;
+    RidgeLinesSSEntry *prev;
+  } l;
+  /* 128-bit integer form */
+  __int128_t i;
+};
+
+struct _RidgeLinesSS {
+  int rows, cols;
+  char *raw_entries;
+  RidgeLinesSSEntry *entries;
+};
+
+RidgeLinesSS *ridge_lines_SS_new_for_surface (Surface *s);
+void MP_ridge_lines_SS_build (RidgeLinesSS *lines, RidgePointsSS *points);
+void ridge_lines_SS_destroy (RidgeLinesSS *lines);
+
+/* -------------------------------------------------------------------------- */
+
 /* Global variable controlling how many parallel processes to use */
 extern int multiproc_threads;
 

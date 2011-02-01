@@ -15,9 +15,10 @@
 enum {
   MODE_SEGMENTS,
   MODE_POINTS,
+  MODE_LINES,
 };
 
-#define GETOPT_OPTIONS "spt:m:j:M:S:h"
+#define GETOPT_OPTIONS "slpt:m:j:M:S:h"
 
 static void
 usage (char *name, int status)
@@ -28,6 +29,7 @@ usage (char *name, int status)
 "Scale-space image ridge extraction tool.\n"
 "\n"
 "  -s              Extract ridge segments [default mode]\n"
+"  -l              Extract ridge lines\n"
 "  -p              Extract ridge points\n"
 "  -t SCALES       Specify a single scale or a range of scales\n"
 "  -m NORM         Strength metric to use (A, M or N) [default N]\n"
@@ -109,6 +111,7 @@ main (int argc, char **argv)
   Surface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   Surface *mask = NULL;
   RidgePointsSS *ridges = NULL;
+  RidgeLinesSS *lines = NULL;
   Filter *filt;
   int c, i;
   int n_scales = 0;
@@ -123,6 +126,9 @@ main (int argc, char **argv)
     switch (c) {
     case 's':
       mode = MODE_SEGMENTS;
+      break;
+    case 'l':
+      mode = MODE_LINES;
       break;
     case 'p':
       mode = MODE_POINTS;
@@ -220,6 +226,12 @@ main (int argc, char **argv)
   ridges = ridge_points_SS_new_for_surface (image);
   MP_ridge_points_SS (ridges, Lp, Lpp);
 
+  if (mode == MODE_LINES) {
+    /* Find ridge lines */
+    lines = ridge_lines_SS_new_for_surface (image);
+    MP_ridge_lines_SS_build (lines, ridges);
+  }
+
   /* Generate outputs */
   switch (mode) {
   case MODE_POINTS:
@@ -264,6 +276,7 @@ main (int argc, char **argv)
   surface_destroy (mask);
 
   ridge_points_SS_destroy (ridges);
+  ridge_lines_SS_destroy (lines);
 
   return 0;
 }

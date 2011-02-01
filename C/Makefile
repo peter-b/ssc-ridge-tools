@@ -10,6 +10,7 @@ ridgetool_SOURCES = \
 	ridgetool.c \
 	eigen.c \
 	filter.c \
+	line.c \
 	metrics.c \
 	multiproc.c \
 	ridges.c \
