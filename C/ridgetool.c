@@ -233,27 +233,37 @@ main (int argc, char **argv)
   }
 
   /* Generate outputs */
-  switch (mode) {
-  case MODE_POINTS:
-    /* Point mask output */
-    if (mask_filename != NULL) {
-      mask = surface_new_like (image);
+  if (mask_filename != NULL) {
+    mask = surface_new_like (image);
+    switch (mode) {
+    case MODE_POINTS:
       ridge_points_SS_to_points_mask (ridges, mask);
       surface_to_tiff (mask, mask_filename);
-    }
-    break;
-  case MODE_SEGMENTS:
-    /* Segment mask output */
-    if (mask_filename != NULL) {
-      mask = surface_new_like (image);
+      break;
+
+    case MODE_SEGMENTS:
+    case MODE_LINES:
       ridge_points_SS_to_segments_mask (ridges, mask);
       surface_to_tiff (mask, mask_filename);
+      break;
+
+    default:
+      break;
     }
-    /* Segment SVG output */
-    if (svg_filename != NULL) {
-      cairo_surface_t *svg_surface =
+  }
+
+  if (svg_filename != NULL) {
+    cairo_surface_t *svg_surface;
+    cairo_t *cr;
+    switch (mode) {
+    case MODE_POINTS:
+      /* Computer says no */
+      break;
+
+    case MODE_SEGMENTS:
+      svg_surface =
         cairo_svg_surface_create (svg_filename, image->cols, image->rows);
-      cairo_t *cr = cairo_create (svg_surface);
+      cr = cairo_create (svg_surface);
       cairo_set_source_rgb (cr, 1, 1, 1);
       cairo_paint (cr);
       cairo_set_line_width (cr, 1);
@@ -262,10 +272,25 @@ main (int argc, char **argv)
       ridge_points_SS_draw_segments (cr, ridges);
       cairo_destroy (cr);
       cairo_surface_destroy (svg_surface);
+      break;
+
+    case MODE_LINES:
+      svg_surface =
+        cairo_svg_surface_create (svg_filename, image->cols, image->rows);
+      cr = cairo_create (svg_surface);
+      cairo_set_source_rgb (cr, 1, 1, 1);
+      cairo_paint (cr);
+      cairo_set_line_width (cr, 1);
+      cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+      cairo_set_source_rgb (cr, 0, 0, 0);
+      ridge_lines_SS_draw_lines (cr, lines, ridges);
+      cairo_destroy (cr);
+      cairo_surface_destroy (svg_surface);
+      break;
+
+    default:
+      break;
     }
-    break;
-  default:
-    break;
   }
 
   free (scales);

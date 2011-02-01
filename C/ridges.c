@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,7 +51,7 @@ ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, Surface *mask)
 
   for (int row = 0; row < mask->rows; row++) {
     for (int col = 0; col < mask->cols; col++) {
-      unsigned char flags = ridges->entries[row * ridges->cols + col].flags;
+      unsigned char flags = RIDGE_POINTS_SS_REF(ridges, row, col).flags;
       SURFACE_REF (mask, row, col) = (count_bits_set (flags) == 2);
     }
   }
@@ -64,7 +65,7 @@ ridge_points_SS_to_points_mask (RidgePointsSS *ridges, Surface *mask)
 
   for (int row = 0; row < mask->rows; row++) {
     for (int col = 0; col < mask->cols; col++) {
-      unsigned char flags = ridges->entries[row * ridges->cols + col].flags;
+      unsigned char flags = RIDGE_POINTS_SS_REF(ridges, row, col).flags;
       SURFACE_REF (mask, row, col) =
         ((flags & (EDGE_FLAG_NORTH | EDGE_FLAG_WEST)) > 0);
     }
@@ -81,6 +82,26 @@ ridge_points_SS_new_for_surface (Surface *s)
   result->entries = MP_malloc (len);
   memset (result->entries, 0, len);
   return result;
+}
+
+void
+ridge_points_SS_entry_get_position (RidgePointsSS *ridges,
+                                    RidgePointsSSEntry *entry,
+                                    int *row, int *col)
+{
+  intptr_t ofs;
+
+  assert (ridges);
+  assert (entry);
+  assert (row);
+  assert (col);
+
+  ofs = (intptr_t) (entry - ridges->entries);
+
+  *row = ofs / ridges->cols;
+  *col = ofs % ridges->cols;
+
+  assert (*row < ridges->rows && *row >= 0);
 }
 
 void
@@ -122,8 +143,7 @@ MP_ridge_points_SS_create_func (int thread_num, int thread_count, void *user_dat
     }
 
     for (col = 0; col < info->ridges->cols; col++) {
-      RidgePointsSSEntry *entry =
-        info->ridges->entries + row * info->ridges->cols + col;
+      RidgePointsSSEntry *entry = RIDGE_POINTS_SS_PTR (info->ridges, row, col);
 
       /* North */
       if (prev_row[col] != 255) {

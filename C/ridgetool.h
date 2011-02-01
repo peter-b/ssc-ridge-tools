@@ -113,6 +113,9 @@ struct _RidgePointsSS {
   RidgePointsSSEntry *entries;
 };
 
+#define RIDGE_POINTS_SS_PTR(s,r,c) ((s)->entries + (s)->cols * (r) + (c))
+#define RIDGE_POINTS_SS_REF(s,r,c) (*RIDGE_POINTS_SS_PTR((s),(r),(c)))
+
 RidgePointsSS *ridge_points_SS_new_for_surface (Surface *s);
 void MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp);
 void ridge_points_SS_destroy (RidgePointsSS *r);
@@ -146,9 +149,15 @@ struct _RidgeLinesSS {
   RidgeLinesSSEntry *entries;
 };
 
+#define RIDGE_LINES_SS_PTR(s,r,c) ((s)->entries + (s)->cols * (r) + (c))
+#define RIDGE_LINES_SS_REF(s,r,c) (*RIDGE_LINES_SS_PTR((s),(r),(c)))
+
 RidgeLinesSS *ridge_lines_SS_new_for_surface (Surface *s);
 void MP_ridge_lines_SS_build (RidgeLinesSS *lines, RidgePointsSS *points);
 void ridge_lines_SS_destroy (RidgeLinesSS *lines);
+void ridge_lines_SS_entry_get_position (RidgeLinesSS *lines,
+                                        RidgeLinesSSEntry *entry,
+                                        int *row, int *col);
 
 /* -------------------------------------------------------------------------- */
 

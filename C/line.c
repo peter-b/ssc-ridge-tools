@@ -260,8 +260,8 @@ MP_ridge_lines_SS_build1_func (int thread_num, int thread_count, void *user_data
 
   for (row = first_row; row < first_row + num_rows; row++) {
     for (col = 0; col < l->cols; col++) {
-      RidgePointsSSEntry *s = p->entries + row * p->cols + col;
-      RidgeLinesSSEntry *x = l->entries + row * l->cols + col;
+      RidgePointsSSEntry *s = RIDGE_POINTS_SS_PTR (p, row, col);
+      RidgeLinesSSEntry *x = RIDGE_LINES_SS_PTR (l, row, col);
       unsigned char nflags, flags = s->flags;
 
       /* Skip locations which don't contain ridge segments */
@@ -318,8 +318,8 @@ MP_ridge_lines_SS_build2_func (int thread_num, int thread_count, void *user_data
 
   for (row = first_row; row < first_row + num_rows; row++) {
     for (col = 0; col < l->cols; col++) {
-      RidgeLinesSSEntry *root = l->entries + row * l->cols + col;
-      RidgePointsSSEntry *rootp = p->entries + row * p->cols + col;
+      RidgePointsSSEntry *rootp = RIDGE_POINTS_SS_PTR (p, row, col);
+      RidgeLinesSSEntry *root = RIDGE_LINES_SS_PTR (l, row, col);
 
       RidgePointsSSEntry *neighbours[2], *startp;
       RidgePointsSSEntry *currp = NULL, *prevp = NULL, *nextp = NULL;
@@ -411,6 +411,7 @@ ridge_lines_SS_new_for_surface (Surface *s)
   d = MP_malloc (len);
   memset (d, 0, len);
 
+  /* Make sure entries pointer is properly aligned */
   result->raw_entries = d;
   result->entries =
     (RidgeLinesSSEntry *) (d + ((intptr_t) d) % sizeof (RidgeLinesSSEntry));
@@ -425,4 +426,24 @@ ridge_lines_SS_destroy (RidgeLinesSS *lines)
   if (lines == NULL) return;
   MP_free (lines->raw_entries);
   free (lines);
+}
+
+void
+ridge_lines_SS_entry_get_position (RidgeLinesSS *lines,
+                                   RidgeLinesSSEntry *entry,
+                                   int *row, int *col)
+{
+  intptr_t ofs;
+
+  assert (lines);
+  assert (entry);
+  assert (row);
+  assert (col);
+
+  ofs = (intptr_t) (entry - lines->entries);
+
+  *row = ofs / lines->cols;
+  *col = ofs % lines->cols;
+
+  assert (*row < lines->rows && *row >= 0);
 }
