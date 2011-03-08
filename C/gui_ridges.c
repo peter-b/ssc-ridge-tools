@@ -1,3 +1,4 @@
+#include "config.h"
 
 #include <math.h>
 #include <cairo.h>

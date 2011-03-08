@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <stdint.h>
 #include <math.h>
 #include <cairo.h>

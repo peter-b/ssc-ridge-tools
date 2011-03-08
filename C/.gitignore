@@ -1,5 +1,16 @@
 *.o
+*.in
 *~
 show-tiff
 ridgetool
 qr-symmv
+.deps
+
+Makefile
+aclocal.m4
+autom4te.cache
+config.h
+config.log
+config.status
+configure
+stamp-h1
