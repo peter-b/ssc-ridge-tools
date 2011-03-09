@@ -6,6 +6,7 @@ LDFLAGS = -lm -ltiff $(GTK_LIBS)
 
 libridgeio_a_SOURCES = \
 	ridgeio.h \
+	ridgeio_array.c \
 	ridgeio_data.c \
 	ridgeio_line.c \
 	ridgeio_lowlvl.c \

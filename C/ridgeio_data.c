@@ -12,20 +12,24 @@ RioData *
 rio_data_new (int type)
 {
   RioData *d = malloc (sizeof (RioData));
+  size_t elem_size;
 
   switch (type) {
   case RIO_DATA_POINTS:
+    elem_size = sizeof (RioPoint);
+    break;
   case RIO_DATA_SEGMENTS:
+    elem_size = sizeof (RioSegment);
+    break;
   case RIO_DATA_LINES:
+    elem_size = sizeof (RioLine);
     break;
   default:
     abort();
   }
 
   d->type = type;
-  d->length = 0;
-  d->data_length = 0;
-  d->entries = NULL;
+  rio_array_init (&d->contents, elem_size, INITIAL_LENGTH);
   return d;
 }
 
@@ -34,105 +38,55 @@ rio_data_destroy (RioData *data)
 {
   if (!data) return;
 
-  if (data->entries) {
+  if (rio_array_get_length (&data->contents)
+      && data->type == RIO_DATA_LINES) {
     /* If this is a set of line data, it's necessary to free each of the
      * lines' point arrays. */
-    if (data->type == RIO_DATA_LINES) {
-      for (int i = 0; i < data->length; i++) {
-        RioLine *l = rio_data_get_line (data, i);
-        free (l->points);
-      }
+    for (int i = 0; i < rio_data_get_num_entries (data); i++) {
+      RioLine *l = rio_data_get_line (data, i);
+      rio_line_clear (l);
     }
-    free (data->entries);
   }
+
+  rio_array_clear (&data->contents);
   free (data);
 }
 
-int
-rio_data_get_type (RioData *data)
-{
-  assert (data);
-  return data->type;
-}
-
-int
-rio_data_get_num_entries (RioData *data)
-{
-  assert (data);
-  return data->length;
+RioLine *
+rio_data_new_line (RioData *data) {
+  RioLine *l = rio_array_add (&data->contents, RioLine);
+  rio_line_init (l, 0);
+  return l;
 }
 
 RioPoint *
 rio_data_get_point (RioData *data, int index)
 {
   assert (data);
-  if (index < 0 || index >= data->length) return NULL;
-  if (data->type != RIO_DATA_POINTS) return NULL;
+  if (index < 0 || index >= rio_data_get_num_entries (data)) return NULL;
+  if (rio_data_get_type (data) != RIO_DATA_POINTS) return NULL;
 
-  return ((RioPoint *) (data->entries)) + index;
+  return rio_array_get_item (&data->contents, index, RioPoint);
 }
 
 RioSegment *
 rio_data_get_segment (RioData *data, int index)
 {
   assert (data);
-  if (index < 0 || index >= data->length) return NULL;
-  if (data->type != RIO_DATA_SEGMENTS) return NULL;
+  if (index < 0 || index >= rio_data_get_num_entries (data)) return NULL;
+  if (rio_data_get_type (data) != RIO_DATA_SEGMENTS) return NULL;
 
-  return ((RioSegment *) (data->entries)) + index;
+  return rio_array_get_item (&data->contents, index, RioSegment);
 }
 
 RioLine *
 rio_data_get_line (RioData *data, int index)
 {
   assert (data);
-  if (index < 0 || index >= data->length) return NULL;
-  if (data->type != RIO_DATA_LINES) return NULL;
+  if (index < 0 || index >= rio_data_get_num_entries (data)) return NULL;
+  if (rio_data_get_type (data) != RIO_DATA_LINES) return NULL;
 
-  return ((RioLine *) (data->entries)) + index;
-}
-
-/* Attempt to expand the internal array used by RioData, if it is
- * full. */
-static void
-test_expand (RioData *data, size_t entry_size)
-{
-  if (data->length < data->data_length) return;
-  int len = data->data_length << 1;
-  len = len ? len : INITIAL_LENGTH;
-
-  size_t size = len * entry_size;
-  void *newm = realloc (data->entries, size);
-  assert (newm);
-  data->entries = newm;
-  data->data_length = len;
-}
-
-RioPoint *
-rio_data_new_point (RioData *data)
-{
-  assert (data);
-  if (data->type != RIO_DATA_POINTS) return NULL;
-  test_expand (data, sizeof (RioPoint));
-  return ((RioPoint *) (data->entries)) + (++data->length);
-}
-
-RioSegment *
-rio_data_new_segment (RioData *data)
-{
-  assert (data);
-  if (data->type != RIO_DATA_SEGMENTS) return NULL;
-  test_expand (data, sizeof (RioSegment));
-  return ((RioSegment *) (data->entries)) + (++data->length);
-}
-
-RioLine *
-rio_data_new_line (RioData *data)
-{
-  assert (data);
-  if (data->type != RIO_DATA_LINES) return NULL;
-  test_expand (data, sizeof (RioLine));
-  return ((RioLine *) (data->entries)) + (++data->length);
+  return rio_array_get_item (&data->contents, index, RioLine);
 }
 
 int
@@ -192,11 +146,13 @@ rio_data_to_file (RioData *data, const char *filename) {
   if (!fp) goto save_fail;
 
   /* Write header */
-  if (!rio_data_write_header (data->type, data->length, fp)) goto save_fail;
+  if (!rio_data_write_header (rio_data_get_type (data),
+                              rio_data_get_num_entries (data), fp))
+    goto save_fail;
 
   /* Write each entry */
-  for (int i = 0; i < data->length; i++) {
-    switch (data->type) {
+  for (int i = 0; i < rio_data_get_num_entries (data); i++) {
+    switch (rio_data_get_type (data)) {
     case RIO_DATA_POINTS:
       if (!rio_point_write (rio_data_get_point (data, i), fp)) goto save_fail;
       break;

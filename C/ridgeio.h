@@ -4,9 +4,16 @@
 #include <stdio.h>
 #include <stdint.h>
 
+typedef struct _RioArray RioArray;
 typedef struct _RioPoint RioPoint;
 typedef struct _RioSegment RioSegment;
-typedef struct _RioLine RioLine;
+typedef RioArray RioLine;
+
+struct _RioArray {
+  uint32_t len, capacity;
+  size_t size;
+  void *contents;
+};
 
 struct _RioPoint {
   uint32_t row, col;
@@ -15,11 +22,6 @@ struct _RioPoint {
 
 struct _RioSegment {
   RioPoint start, end;
-};
-
-struct _RioLine {
-  uint32_t length, data_length;
-  RioPoint *points;
 };
 
 typedef struct _RioData RioData;
@@ -31,21 +33,28 @@ enum {
 };
 
 struct _RioData {
-  uint32_t type, length, data_length;
-  void *entries;
+  uint32_t type;
+  RioArray contents;
 };
+
+void rio_array_init (RioArray *array, size_t elem_size, uint32_t capacity);
+void rio_array_clear (RioArray *array);
+void *rio_array_add_i (RioArray *array);
+#define rio_array_add(a, T) ((T *) rio_array_add_i (a))
+#define rio_array_get_item(a, i, T) ((T *) (a)->contents + (i))
+#define rio_array_get_length(a) ((a)->len)
 
 RioData *rio_data_new (int type);
 void rio_data_destroy (RioData *data);
 
-int rio_data_get_type (RioData *data);
-int rio_data_get_num_entries (RioData *data);
+#define rio_data_get_type(d) (d->type)
+#define rio_data_get_num_entries(d) (rio_array_get_length(&d->contents))
 RioPoint *rio_data_get_point (RioData *data, int index);
 RioSegment *rio_data_get_segment (RioData *data, int index);
 RioLine *rio_data_get_line (RioData *data, int index);
-RioPoint *rio_data_new_point (RioData *data);
-RioSegment *rio_data_new_segment (RioData *data);
-RioLine *rio_data_new_line (RioData *data);
+#define rio_data_new_point(d) (rio_array_add(&d->contents, RioPoint))
+#define rio_data_new_segment(d) (rio_array_add(&d->contents, RioSegment))
+RioLine *rio_data_new_line (RioData *d);
 
 void rio_point_get_position (RioPoint *point, int *row, int *col);
 void rio_point_get_subpixel (RioPoint *point, double *row, double *col);
@@ -59,9 +68,11 @@ void rio_point_set_strength (RioPoint *point, float strength);
 RioPoint *rio_segment_get_start (RioSegment *segment);
 RioPoint *rio_segment_get_end (RioSegment *segment);
 
-int rio_line_get_length (RioLine *line);
-RioPoint *rio_line_get_point (RioLine *line, int index);
-RioPoint *rio_line_new_point (RioLine *line);
+#define rio_line_init(l,c) (rio_array_init((l), sizeof(RioLine), (c)))
+#define rio_line_clear rio_array_clear
+#define rio_line_get_length rio_array_get_length
+#define rio_line_get_point(l, i) (rio_array_get_item((l), i, RioPoint))
+#define rio_line_new_point(l) (rio_array_add ((l), RioPoint))
 
 /* Low-level IO functions */
 
