@@ -449,3 +449,15 @@ ridge_lines_SS_entry_get_position (RidgeLinesSS *lines,
 
   assert (*row < lines->rows && *row >= 0);
 }
+
+RidgeLinesSSEntry *
+ridge_lines_SS_entry_next (RidgeLinesSSEntry *entry)
+{
+  return list_next (entry);
+}
+
+RidgeLinesSSEntry *
+ridge_lines_SS_entry_prev (RidgeLinesSSEntry *entry)
+{
+  return list_prev (entry);
+}

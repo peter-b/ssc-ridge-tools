@@ -5,14 +5,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <assert.h>
-#include <cairo.h>
-#include <cairo-svg.h>
-#include <gtk/gtk.h>
 
 #include "ridgetool.h"
-#include "ridgetool_gui.h"
 
 enum {
   MODE_SEGMENTS,
@@ -20,13 +17,13 @@ enum {
   MODE_LINES,
 };
 
-#define GETOPT_OPTIONS "slpt:m:j:M:S:h"
+#define GETOPT_OPTIONS "slpt:m:j:h"
 
 static void
 usage (char *name, int status)
 {
   printf (
-"Usage: %s OPTION... FILENAME\n"
+"Usage: %s OPTION... INFILE [OUTFILE]\n"
 "\n"
 "Scale-space image ridge extraction tool.\n"
 "\n"
@@ -36,12 +33,14 @@ usage (char *name, int status)
 "  -t SCALES       Specify a single scale or a range of scales\n"
 "  -m NORM         Strength metric to use (A, M or N) [default N]\n"
 "  -j THREADS      Number of multiprocessing threads to use [default %i]\n"
-"  -M FILENAME     Output TIFF mask showing locations of ridges\n"
-"  -S FILENAME     Output SVG file showing locations of ridges\n"
 "  -h              Display this message and exit\n"
 "\n"
-"Please report bugs to p.brett@surrey.ac.uk\n",
-name, multiproc_threads);
+"Extracts ridges from INFILE, which should be a single-channel 32-bit\n"
+"IEEE floating point TIFF file.  Optionally, outputs extracted ridge\n"
+"data to OUTFILE.\n"
+"\n"
+"Please report bugs to %s.\n",
+name, multiproc_threads, PACKAGE_BUGREPORT);
 
   exit (status);
 }
@@ -108,7 +107,7 @@ scale_compar (const void *a, const void *b)
 int
 main (int argc, char **argv)
 {
-  char *filename, *mask_filename = NULL, *svg_filename = NULL;
+  char *filename, *out_filename = NULL;
   Surface *image = NULL;
   Surface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   Surface *mask = NULL;
@@ -161,12 +160,6 @@ main (int argc, char **argv)
         usage (argv[0], 1);
       }
       break;
-    case 'M':
-      mask_filename = optarg;
-      break;
-    case 'S':
-      svg_filename = optarg;
-      break;
     case 'v':
       show_result = 1;
       break;
@@ -189,11 +182,16 @@ main (int argc, char **argv)
   }
 
   /* Get filename */
-  if (argc - optind < 1) {
+  if (argc - optind == 0) {
     fprintf (stderr, "ERROR: You must specify an input filename.\n\n");
     usage (argv[0], 1);
   }
   filename = argv[optind];
+
+  /* Get output filename */
+  if (argc - optind > 1) {
+    out_filename = argv[optind+1];
+  }
 
   /* Sort scales and remove duplicates. If no scales have been
    * specified, just use 0 as the scale to extract at. */
@@ -234,64 +232,26 @@ main (int argc, char **argv)
     MP_ridge_lines_SS_build (lines, ridges);
   }
 
-  /* Generate outputs */
-  if (mask_filename != NULL) {
-    mask = surface_new_like (image);
+  /* Generate output */
+  if (out_filename) {
     switch (mode) {
     case MODE_POINTS:
-      ridge_points_SS_to_points_mask (ridges, mask);
-      surface_to_tiff (mask, mask_filename);
+      status = export_points (ridges, image, RnormL, out_filename);
       break;
-
     case MODE_SEGMENTS:
+      status = export_segments (ridges, image, RnormL, out_filename);
+      break;
     case MODE_LINES:
-      ridge_points_SS_to_segments_mask (ridges, mask);
-      surface_to_tiff (mask, mask_filename);
+      status = export_lines (lines, ridges, image, RnormL, out_filename);
       break;
-
     default:
-      break;
+      abort ();
     }
-  }
-
-  if (svg_filename != NULL) {
-    cairo_surface_t *svg_surface;
-    cairo_t *cr;
-    switch (mode) {
-    case MODE_POINTS:
-      /* Computer says no */
-      break;
-
-    case MODE_SEGMENTS:
-      svg_surface =
-        cairo_svg_surface_create (svg_filename, image->cols, image->rows);
-      cr = cairo_create (svg_surface);
-      cairo_set_source_rgb (cr, 1, 1, 1);
-      cairo_paint (cr);
-      cairo_set_line_width (cr, 1);
-      cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
-      cairo_set_source_rgb (cr, 0, 0, 0);
-      ridge_points_SS_draw_segments (cr, ridges);
-      cairo_destroy (cr);
-      cairo_surface_destroy (svg_surface);
-      break;
-
-    case MODE_LINES:
-      svg_surface =
-        cairo_svg_surface_create (svg_filename, image->cols, image->rows);
-      cr = cairo_create (svg_surface);
-      cairo_set_source_rgb (cr, 1, 1, 1);
-      cairo_paint (cr);
-      cairo_set_line_width (cr, 1);
-      cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
-      cairo_set_source_rgb (cr, 0, 0, 0);
-      ridge_lines_SS_draw_lines (cr, lines, ridges);
-      cairo_destroy (cr);
-      cairo_surface_destroy (svg_surface);
-      break;
-
-    default:
-      break;
+    if (!status) {
+      const char *msg = errno ? strerror (errno) : "Unexpected error";
+      fprintf (stderr, "ERROR: Could not save ridge data to %s: %s\n",
+               out_filename, msg);
+      exit (2);
     }
   }
 

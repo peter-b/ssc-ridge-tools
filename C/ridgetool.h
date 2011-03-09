@@ -158,6 +158,17 @@ void ridge_lines_SS_destroy (RidgeLinesSS *lines);
 void ridge_lines_SS_entry_get_position (RidgeLinesSS *lines,
                                         RidgeLinesSSEntry *entry,
                                         int *row, int *col);
+RidgeLinesSSEntry *ridge_lines_SS_entry_next (RidgeLinesSSEntry *entry);
+RidgeLinesSSEntry *ridge_lines_SS_entry_prev (RidgeLinesSSEntry *entry);
+
+/* -------------------------------------------------------------------------- */
+
+int export_points (RidgePointsSS *ridges, Surface *image,
+                   Surface *RnormL, const char *filename);
+int export_segments (RidgePointsSS *ridges, Surface *image,
+                     Surface *RnormL, const char *filename);
+int export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
+                  Surface *image, Surface *RnormL, const char *filename);
 
 /* -------------------------------------------------------------------------- */
 
@@ -203,6 +214,14 @@ count_bits_set (unsigned int v)
   v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
   c = (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24; // count
   return c;
+}
+
+/* Linear interpolation: returns value at offset d along x-y. d must
+ * be in the range 0.0 - 1.0. */
+static inline float
+LINTERP (float d, float x, float y)
+{
+  return (1-d)*x + d*y;
 }
 
 #endif /* !__RIDGETOOL_H__ */

@@ -13,16 +13,18 @@ libridgeio_a_SOURCES = \
 	ridgeio_segment.c
 
 ridgetool_SOURCES = \
+	ridgetool.h \
 	ridgetool.c \
 	eigen.c \
+	export.c \
 	filter.c \
 	line.c \
 	metrics.c \
 	multiproc.c \
 	ridges.c \
-	surface.c \
-	gui_surface.c \
-	gui_ridges.c
+	surface.c
+
+ridgetool_LDADD = libridgeio.a
 
 qr_symmv_SOURCES = \
 	qr-symmv.c \
@@ -33,3 +35,6 @@ show_tiff_SOURCES = \
 	show-tiff.c \
 	surface.c \
 	gui_surface.c
+
+EXTRA_DIST = \
+	gui_ridges.c

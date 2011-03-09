@@ -14,14 +14,6 @@ struct MPRidgeSegMaskSSInfo
   Surface *Lp, *Lpp, *mask;
 };
 
-/* Linear interpolation: returns value at offset d along x-y. d must
- * be in the range 0.0 - 1.0. */
-static inline float
-LINTERP (float d, float x, float y)
-{
-  return (1-d)*x + d*y;
-}
-
 static inline float
 test_edge_SS (Surface *Lp, Surface *Lpp, int row, int col, int drow, int dcol)
 {
@@ -203,3 +195,4 @@ MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp)
 
   free (info);
 }
+
