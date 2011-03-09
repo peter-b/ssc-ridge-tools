@@ -25,7 +25,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([tiff], [TIFFOpen])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([stddef.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -42,7 +42,7 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset munmap strchr strdup])
+AC_CHECK_FUNCS([memset munmap strchr strdup strerror])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
