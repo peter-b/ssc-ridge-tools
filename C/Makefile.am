@@ -1,4 +1,4 @@
-bin_PROGRAMS = ridgetool show-tiff qr-symmv
+bin_PROGRAMS = ridgetool show-tiff
 noinst_LIBRARIES = libridgeio.a
 
 CFLAGS = -Wall -pedantic $(GTK_CFLAGS)
@@ -25,10 +25,6 @@ ridgetool_SOURCES = \
 	surface.c
 
 ridgetool_LDADD = libridgeio.a
-
-qr_symmv_SOURCES = \
-	qr-symmv.c \
-	eigen.c
 
 show_tiff_SOURCES = \
 	multiproc.c \
