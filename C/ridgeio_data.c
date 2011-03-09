@@ -387,3 +387,37 @@ rio_data_from_file (const char *filename)
   errno = errsv;
   return NULL;
 }
+
+int
+rio_data_get_metadata_uint32 (RioData *data, uint32_t key, uint32_t *val)
+{
+  const char *buf;
+  size_t buf_size;
+  uint32_t v = 0;
+
+  buf = rio_data_get_metadata (data, key, &buf_size);
+  if (buf_size != 4) {
+    fprintf (stderr, "WARNING: Metadata entry %i has length %zi "
+             "(expected 4)\n", key, buf_size);
+    return 0;
+  }
+
+  for (int i = 0; i < 4; i++) {
+    v = (v << 8) | buf[i];
+  }
+  *val = v;
+  return 1;
+}
+
+void
+rio_data_set_metadata_uint32 (RioData *data, uint32_t key, uint32_t val)
+{
+  unsigned char buf[4];
+
+  for (int i = 0; i < 4; i++) {
+    buf[3-i] = val & 0xff;
+    val = val >> 8;
+  }
+
+  rio_data_set_metadata (data, key, (char *) buf, 4);
+}

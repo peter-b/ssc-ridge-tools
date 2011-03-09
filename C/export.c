@@ -72,6 +72,17 @@ export_point (RidgePointsSS *ridges, Surface *image, Surface *RnormL,
 }
 
 int
+export_image_size (Surface *image, FILE *fp)
+{
+  RioData *d = rio_data_new (RIO_DATA_POINTS);
+  rio_data_set_metadata_uint32 (d, RIO_KEY_IMAGE_ROWS, (uint32_t) image->rows);
+  rio_data_set_metadata_uint32 (d, RIO_KEY_IMAGE_COLS, (uint32_t) image->cols);
+  int s = (fseek (fp, 0, SEEK_END) != -1) && rio_data_write_metadata (d, fp);
+  rio_data_destroy (d);
+  return s;
+}
+
+int
 export_points (RidgePointsSS *ridges, Surface *image,
                Surface *RnormL, const char *filename)
 {
@@ -108,6 +119,9 @@ export_points (RidgePointsSS *ridges, Surface *image,
   /* Rewind the file and rewrite the header with the actual length. */
   if (fseek (fp, 0, SEEK_SET) == -1) goto export_fail;
   rio_data_write_header (RIO_DATA_POINTS, len, fp);
+
+  /* Add metadata block to end of file */
+  export_image_size (image, fp);
 
   fclose (fp);
 
@@ -158,6 +172,9 @@ export_segments (RidgePointsSS *ridges, Surface *image,
   /* Rewind the file and rewrite the header with the actual length. */
   if (fseek (fp, 0, SEEK_SET) == -1) goto export_fail;
   rio_data_write_header (RIO_DATA_POINTS, len, fp);
+
+  /* Add metadata block to end of file */
+  export_image_size (image, fp);
 
   fclose (fp);
 
@@ -270,6 +287,9 @@ export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
   /* Rewind the file and rewrite the header with the actual length. */
   if (fseek (fp, 0, SEEK_SET) == -1) goto export_fail;
   rio_data_write_header (RIO_DATA_POINTS, num_lines, fp);
+
+  /* Add metadata block to end of file */
+  export_image_size (image, fp);
 
   fclose (fp);
 

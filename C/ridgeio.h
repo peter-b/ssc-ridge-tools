@@ -110,4 +110,9 @@ int rio_data_read_metadata (RioData *data, FILE *fp);
 int rio_data_to_file (RioData *data, const char *filename);
 RioData *rio_data_from_file (const char *filename);
 
+/* Convenience functions */
+
+int rio_data_get_metadata_uint32 (RioData *data, uint32_t key, uint32_t *val);
+void rio_data_set_metadata_uint32 (RioData *data, uint32_t key, uint32_t val);
+
 #endif /* !__RIDGEIO_H__ */
