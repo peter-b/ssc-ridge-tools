@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
@@ -7,6 +8,14 @@
 
 #define INITIAL_LENGTH 256
 #define FILE_MAGIC "RIDG"
+
+typedef struct _RioMetadata RioMetadata;
+
+struct _RioMetadata {
+  uint32_t key;
+  char *val;
+  size_t val_size;
+};
 
 RioData *
 rio_data_new (int type)
@@ -30,6 +39,7 @@ rio_data_new (int type)
 
   d->type = type;
   rio_array_init (&d->contents, elem_size, INITIAL_LENGTH);
+  rio_array_init (&d->metadata, sizeof (RioMetadata), 0);
   return d;
 }
 
@@ -47,10 +57,18 @@ rio_data_destroy (RioData *data)
       rio_line_clear (l);
     }
   }
-
   rio_array_clear (&data->contents);
+
+  for (int i = 0; i < rio_array_get_length (&data->metadata); i++) {
+    RioMetadata *m = rio_array_get_item (&data->metadata, i, RioMetadata);
+    if (m->val) free (m->val);
+  }
+  rio_array_clear (&data->metadata);
+
   free (data);
 }
+
+/* -------------------------------------------------------------------------- */
 
 RioLine *
 rio_data_new_line (RioData *data) {
@@ -88,6 +106,55 @@ rio_data_get_line (RioData *data, int index)
 
   return rio_array_get_item (&data->contents, index, RioLine);
 }
+
+/* -------------------------------------------------------------------------- */
+
+RioMetadata *find_metadata (RioData *data, uint32_t key, bool create)
+{
+  RioMetadata *m;
+  for (int i = 0; i < rio_array_get_length (&data->metadata); i++) {
+    m = rio_array_get_item (&data->metadata, i, RioMetadata);
+    if (m->key == key) return m;
+  }
+
+  if (!create) return NULL;
+
+  m = rio_array_add (&data->metadata, RioMetadata);
+  m->key = key;
+  m->val = NULL;
+  m->val_size = 0;
+  return m;
+}
+
+const char *
+rio_data_get_metadata (RioData *data, uint32_t key, size_t *val_size)
+{
+  RioMetadata *m = find_metadata(data, key, false);
+  if (!m) return NULL;
+
+  if (val_size && m->val)
+    *val_size = m->val_size;
+  return m->val;
+}
+
+void
+rio_data_set_metadata (RioData *data, uint32_t key,
+                       const char *value, size_t val_size)
+{
+  RioMetadata *m = find_metadata(data, key, true);
+
+  if (value) {
+    m->val = realloc (m->val, val_size);
+    m->val_size = val_size;
+    memcpy (m->val, value, val_size);
+  } else {
+    free (m->val);
+    m->val = NULL;
+    m->val_size = 0;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 
 int
 rio_data_write_header (uint32_t type, uint32_t length, FILE *fp)
@@ -132,6 +199,95 @@ rio_data_read_header (uint32_t *type, uint32_t *length, FILE *fp)
           && rio_read_uint32 (length, fp));
 }
 
+static int
+write_metadata_buf (const char *buf, size_t len, FILE *fp)
+{
+  if (len == -1) len = strlen (buf);
+  /* Write out length */
+  if (!rio_write_uint32 (len, fp)) return 0;
+  /* Write out value. */
+  if (fwrite (buf, len, 1, fp) != 1) return 0;
+  /* Add padding to bring up to a multiple of 4 bytes. */
+  while (len++ % 4) {
+    if (fputc (0, fp) == EOF) return 0;
+  }
+  return 1;
+}
+
+int
+rio_data_write_metadata (RioData *data, FILE *fp)
+{
+  /* Save the current location. We'll come back here and fill in the
+   * number of metadata items later. */
+  int len_pos = ftell (fp);
+  if (len_pos < 0) return 0;
+  int num_metadata = 0;
+  if (!rio_write_uint32 (0, fp)) return 0;
+
+  for (int i = 0; i < rio_array_get_length (&data->metadata); i++) {
+    RioMetadata *m = rio_array_get_item (&data->metadata, i, RioMetadata);
+    if (m->val == NULL) continue; /* Skip invalid entries */
+
+    if (!rio_write_uint32 (m->key, fp)) return 0;
+    if (!write_metadata_buf (m->val, m->val_size, fp)) return 0;
+
+    num_metadata++;
+  }
+
+  /* Go back and fill in the number of metadata entries */
+  return (fseek (fp, len_pos, SEEK_SET) != -1
+          && rio_write_uint32 (num_metadata, fp)
+          && fseek (fp, len_pos, SEEK_END) != -1);
+}
+
+static char *
+read_metadata_buf (FILE *fp, size_t *len)
+{
+  uint32_t buf_len;
+  char *buf;
+  /* Read in length */
+  if (!rio_read_uint32 (&buf_len, fp)) return NULL;
+  /* Allocate space for value. If no return location is specified for
+   * length, allow enough space for terminating nul byte. */
+  if (len) {
+    *len = (size_t) buf_len;
+    buf = malloc (buf_len);
+  } else {
+    buf = malloc (buf_len + 1);
+    buf[buf_len] = 0;
+  }
+  /* Read in value */
+  if (fread (buf, buf_len, 1, fp) != 1) return NULL;
+  /* Skip over padding to bring up to a multiple of 4 bytes. */
+  while (buf_len++ % 4) {
+    if (fgetc (fp) == EOF) return NULL;
+  }
+
+  return buf;
+}
+
+int
+rio_data_read_metadata (RioData *data, FILE *fp)
+{
+  /* Read the number of metadata items */
+  uint32_t num_metadata;
+  if (!rio_read_uint32 (&num_metadata, fp)) return 0;
+
+  for (int i = 0; i < num_metadata; i++) {
+    uint32_t key;
+    char *val;
+    size_t val_size;
+
+    if (!rio_read_uint32 (&key, fp)) return 0;
+    val = read_metadata_buf (fp, &val_size);
+    if (val == NULL) return 0;
+
+    rio_data_set_metadata (data, key, val, val_size);
+    free (val);
+  }
+  return 1;
+}
+
 int
 rio_data_to_file (RioData *data, const char *filename) {
   int errsv;
@@ -166,6 +322,9 @@ rio_data_to_file (RioData *data, const char *filename) {
       abort ();
     }
   }
+
+  /* Write metadata */
+  if (!rio_data_write_metadata (data, fp)) goto save_fail;
 
   fclose (fp);
 
@@ -213,6 +372,9 @@ rio_data_from_file (const char *filename)
       abort ();
     }
   }
+
+  /* Read metadata */
+  if (!rio_data_read_metadata (result, fp)) goto load_fail;
 
   fclose (fp);
 

@@ -32,9 +32,14 @@ enum {
   RIO_DATA_LINES = 3,
 };
 
+enum {
+  RIO_KEY_IMAGE_ROWS = 0x10,
+  RIO_KEY_IMAGE_COLS = 0x11,
+};
+
 struct _RioData {
   uint32_t type;
-  RioArray contents;
+  RioArray contents, metadata;
 };
 
 void rio_array_init (RioArray *array, size_t elem_size, uint32_t capacity);
@@ -55,6 +60,11 @@ RioLine *rio_data_get_line (RioData *data, int index);
 #define rio_data_new_point(d) (rio_array_add(&d->contents, RioPoint))
 #define rio_data_new_segment(d) (rio_array_add(&d->contents, RioSegment))
 RioLine *rio_data_new_line (RioData *d);
+
+const char *rio_data_get_metadata (RioData *data, uint32_t key,
+                                   size_t *val_size);
+void rio_data_set_metadata (RioData *data, uint32_t key,
+                            const char *value, size_t val_size);
 
 void rio_point_get_position (RioPoint *point, int *row, int *col);
 void rio_point_get_subpixel (RioPoint *point, double *row, double *col);
@@ -92,6 +102,8 @@ int rio_line_read (RioLine *line, FILE *fp);
 
 int rio_data_write_header (uint32_t type, uint32_t length, FILE *fp);
 int rio_data_read_header (uint32_t *type, uint32_t *length, FILE *fp);
+int rio_data_write_metadata (RioData *data, FILE *fp);
+int rio_data_read_metadata (RioData *data, FILE *fp);
 
 /* High-level IO functions */
 
