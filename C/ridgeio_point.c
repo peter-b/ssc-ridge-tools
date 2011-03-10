@@ -83,5 +83,5 @@ rio_point_read (RioPoint *point, FILE *fp)
   return (rio_read_uint32 (&point->row, fp)
           && rio_read_uint32 (&point->col, fp)
           && rio_read_float (&point->brightness, fp)
-          && rio_read_float (&point->brightness, fp));
+          && rio_read_float (&point->strength, fp));
 }

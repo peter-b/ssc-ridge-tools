@@ -360,7 +360,7 @@ rio_data_from_file (const char *filename)
   for (int i = 0; i < len; i++) {
     switch (type) {
     case RIO_DATA_POINTS:
-      if (rio_point_read (rio_data_new_point (result), fp)) goto load_fail;
+      if (!rio_point_read (rio_data_new_point (result), fp)) goto load_fail;
       break;
     case RIO_DATA_SEGMENTS:
       if (!rio_segment_read (rio_data_new_segment (result), fp)) goto load_fail;

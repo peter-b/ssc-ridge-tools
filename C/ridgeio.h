@@ -78,7 +78,7 @@ void rio_point_set_strength (RioPoint *point, float strength);
 RioPoint *rio_segment_get_start (RioSegment *segment);
 RioPoint *rio_segment_get_end (RioSegment *segment);
 
-#define rio_line_init(l,c) (rio_array_init((l), sizeof(RioLine), (c)))
+#define rio_line_init(l,c) (rio_array_init((l), sizeof(RioPoint), (c)))
 #define rio_line_clear rio_array_clear
 #define rio_line_get_length rio_array_get_length
 #define rio_line_get_point(l, i) (rio_array_get_item((l), i, RioPoint))
