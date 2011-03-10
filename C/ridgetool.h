@@ -90,9 +90,6 @@ RidgePointsSS *ridge_points_SS_new_for_surface (RutSurface *s);
 void MP_ridge_points_SS (RidgePointsSS *ridges, RutSurface *Lp, RutSurface *Lpp);
 void ridge_points_SS_destroy (RidgePointsSS *r);
 
-void ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, RutSurface *mask);
-void ridge_points_SS_to_points_mask (RidgePointsSS *ridges, RutSurface *mask);
-
 /* -------------------------------------------------------------------------- */
 
 typedef struct _RidgeLinesSS RidgeLinesSS;

@@ -9,11 +9,6 @@
 
 #include "ridgetool.h"
 
-struct MPRidgeSegMaskSSInfo
-{
-  RutSurface *Lp, *Lpp, *mask;
-};
-
 static inline float
 test_edge_SS (RutSurface *Lp, RutSurface *Lpp,
               int row, int col, int drow, int dcol)
@@ -36,35 +31,6 @@ test_edge_SS (RutSurface *Lp, RutSurface *Lpp,
   lpp2 = RUT_SURFACE_REF (Lpp, row + drow, col + dcol);
   if (LINTERP (x, lpp1, lpp2) > 0) return -1;
   return x;
-}
-
-void
-ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, RutSurface *mask)
-{
-  assert (mask->cols == ridges->cols);
-  assert (mask->rows == ridges->rows);
-
-  for (int row = 0; row < mask->rows; row++) {
-    for (int col = 0; col < mask->cols; col++) {
-      unsigned char flags = RIDGE_POINTS_SS_REF(ridges, row, col).flags;
-      RUT_SURFACE_REF (mask, row, col) = (count_bits_set (flags) == 2);
-    }
-  }
-}
-
-void
-ridge_points_SS_to_points_mask (RidgePointsSS *ridges, RutSurface *mask)
-{
-  assert (mask->cols == ridges->cols);
-  assert (mask->rows == ridges->rows);
-
-  for (int row = 0; row < mask->rows; row++) {
-    for (int col = 0; col < mask->cols; col++) {
-      unsigned char flags = RIDGE_POINTS_SS_REF(ridges, row, col).flags;
-      RUT_SURFACE_REF (mask, row, col) =
-        ((flags & (EDGE_FLAG_NORTH | EDGE_FLAG_WEST)) > 0);
-    }
-  }
 }
 
 RidgePointsSS *
