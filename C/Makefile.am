@@ -1,8 +1,13 @@
 bin_PROGRAMS = ridgetool show-tiff
-noinst_LIBRARIES = libridgeio.a
+noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
 CFLAGS = -Wall -pedantic $(GTK_CFLAGS)
 LDFLAGS = -lm -ltiff $(GTK_LIBS)
+
+libridgeutil_a_SOURCES = \
+	ridgeutil.h \
+	ridgeutil_surface.c \
+	ridgeutil_multiproc.c
 
 libridgeio_a_SOURCES = \
 	ridgeio.h \

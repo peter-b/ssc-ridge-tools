@@ -25,7 +25,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([tiff], [TIFFOpen])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stddef.h])
+AC_CHECK_HEADERS([stddef.h valgrind/memcheck.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
