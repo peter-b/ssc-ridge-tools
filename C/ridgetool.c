@@ -209,6 +209,7 @@ main (int argc, char **argv)
 
   /* Load image */
   image = surface_from_tiff (filename);
+  if (!image) return 2; /* Should have already output a message */
 
   /* Create single-scale metrics for lowest scale requested. */
   filt = filter_new_gaussian (scales[0]);
@@ -251,7 +252,7 @@ main (int argc, char **argv)
       const char *msg = errno ? strerror (errno) : "Unexpected error";
       fprintf (stderr, "ERROR: Could not save ridge data to %s: %s\n",
                out_filename, msg);
-      exit (2);
+      exit (3);
     }
   }
 
