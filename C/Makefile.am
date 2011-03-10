@@ -42,7 +42,6 @@ ridgeconv_LDADD = libridgeutil.a libridgeio.a
 
 show_tiff_SOURCES = \
 	show-tiff.c \
-	surface.c \
 	gui_surface.c
 
 show_tiff_LDADD = libridgeutil.a
