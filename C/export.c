@@ -50,12 +50,12 @@ export_point (RidgePointsSS *ridges, Surface *image, Surface *RnormL,
   case EDGE_FLAG_NORTH:
     col2++;
     d = RIDGE_POINTS_SS_PTR(ridges, row, col)->north;
-    rio_point_set_position (&p, (col << 7) + d, (row << 7));
+    rio_point_set_position (&p, (row << 7), (col << 7) + d);
     break;
   case EDGE_FLAG_WEST:
     row2++;
     d = RIDGE_POINTS_SS_PTR(ridges, row, col)->west;
-    rio_point_set_position (&p, (col << 7), (row << 7) + d);
+    rio_point_set_position (&p, (row << 7) + d, (col << 7));
     break;
   default:
     abort ();
@@ -171,7 +171,7 @@ export_segments (RidgePointsSS *ridges, Surface *image,
 
   /* Rewind the file and rewrite the header with the actual length. */
   if (fseek (fp, 0, SEEK_SET) == -1) goto export_fail;
-  rio_data_write_header (RIO_DATA_POINTS, len, fp);
+  rio_data_write_header (RIO_DATA_SEGMENTS, len, fp);
 
   /* Add metadata block to end of file */
   export_image_size (image, fp);
@@ -286,7 +286,7 @@ export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
 
   /* Rewind the file and rewrite the header with the actual length. */
   if (fseek (fp, 0, SEEK_SET) == -1) goto export_fail;
-  rio_data_write_header (RIO_DATA_POINTS, num_lines, fp);
+  rio_data_write_header (RIO_DATA_LINES, num_lines, fp);
 
   /* Add metadata block to end of file */
   export_image_size (image, fp);
