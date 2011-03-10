@@ -1,6 +1,8 @@
 #ifndef __RIDGEUTIL_H__
 #define __RIDGEUTIL_H__
 
+#include <stddef.h>
+
 typedef struct _RutSurface RutSurface;
 
 struct _RutSurface {
