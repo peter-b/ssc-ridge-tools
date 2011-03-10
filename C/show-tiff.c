@@ -36,7 +36,7 @@ main (int argc, char **argv)
   int c, status;
   float limit = NAN;
   char *filename;
-  Surface *s;
+  RutSurface *s;
 
   while ((c = getopt (argc, argv, GETOPT_OPTIONS)) != -1) {
     switch (c) {
@@ -75,7 +75,7 @@ main (int argc, char **argv)
   filename = argv[optind];
 
   /* Load and display file */
-  s = surface_from_tiff (filename);
+  s = rut_surface_from_tiff (filename);
   if (!s) exit (1);
 
   gtk_init (&argc, &argv);
@@ -83,13 +83,13 @@ main (int argc, char **argv)
     limit = -INFINITY;
     for (int row = 0; row < s->rows; row++) {
       for (int col = 0; col < s->cols; col++) {
-        float v = SURFACE_REF (s, row, col);
+        float v = RUT_SURFACE_REF (s, row, col);
         limit = (v > limit) ? v : limit;
       }
     }
   }
   show_surface_dialog (s, limit);
 
-  surface_destroy (s);
+  rut_surface_destroy (s);
   return 0;
 }

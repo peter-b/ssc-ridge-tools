@@ -84,8 +84,8 @@ Filter *filter_new_deriv ()
 
 struct MPFilterInfo {
   Filter *filt;
-  Surface *src;
-  Surface *dest;
+  RutSurface *src;
+  RutSurface *dest;
   int direction;
 };
 
@@ -169,7 +169,7 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
 }
 
 void
-MP_filter (Filter *f, Surface *src, Surface *dest, int flags)
+MP_filter (Filter *f, RutSurface *src, RutSurface *dest, int flags)
 {
   struct MPFilterInfo *info;
   int in_place = ((dest == NULL) || (dest == src));
@@ -200,7 +200,7 @@ MP_filter (Filter *f, Surface *src, Surface *dest, int flags)
 
   if (flags & FILTER_FLAG_ROWS) {
     info->direction = FILTER_FLAG_ROWS;
-    MP_task (MP_filter_func, (void *) info);
+    rut_multiproc_task (MP_filter_func, (void *) info);
 
     /* If there's another convolution, we need to make sure to apply
      * it to dest in-place. */
@@ -209,7 +209,7 @@ MP_filter (Filter *f, Surface *src, Surface *dest, int flags)
 
   if (flags & FILTER_FLAG_COLS) {
     info->direction = FILTER_FLAG_COLS;
-    MP_task (MP_filter_func, (void *) info);
+    rut_multiproc_task (MP_filter_func, (void *) info);
   }
 
   free (info);

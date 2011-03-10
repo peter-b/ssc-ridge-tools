@@ -393,14 +393,14 @@ MP_ridge_lines_SS_build (RidgeLinesSS *lines, RidgePointsSS *points)
   info.lines = lines;
   info.points = points;
 
-  MP_task (MP_ridge_lines_SS_build1_func, (void *) (&info));
-  MP_task (MP_ridge_lines_SS_build2_func, (void *) (&info));
+  rut_multiproc_task (MP_ridge_lines_SS_build1_func, (void *) (&info));
+  rut_multiproc_task (MP_ridge_lines_SS_build2_func, (void *) (&info));
 }
 
 /* ------------------------------------------------------ */
 
 RidgeLinesSS *
-ridge_lines_SS_new_for_surface (Surface *s)
+ridge_lines_SS_new_for_surface (RutSurface *s)
 {
   RidgeLinesSS *result = malloc (sizeof (RidgeLinesSS));
   size_t len;
@@ -410,7 +410,7 @@ ridge_lines_SS_new_for_surface (Surface *s)
 
   /* The +1 is to allow some extra space for alignment */
   len = (result->rows * result->cols + 1) * sizeof (RidgeLinesSSEntry);
-  d = MP_malloc (len);
+  d = rut_multiproc_malloc (len);
   memset (d, 0, len);
 
   /* Make sure entries pointer is properly aligned */
@@ -426,7 +426,7 @@ void
 ridge_lines_SS_destroy (RidgeLinesSS *lines)
 {
   if (lines == NULL) return;
-  MP_free (lines->raw_entries);
+  rut_multiproc_free (lines->raw_entries);
   free (lines);
 }
 

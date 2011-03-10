@@ -8,7 +8,7 @@
 #include "ridgetool.h"
 
 struct MPMetricsSSInfo {
-  Surface *Dx, *Dy, *Dxx, *Dyy, *Dxy, *Lp, *Lpp, *RnormL;
+  RutSurface *Dx, *Dy, *Dxx, *Dyy, *Dxy, *Lp, *Lpp, *RnormL;
   float (*norm_func)(float, float, float);
   float scale;
 };
@@ -52,9 +52,9 @@ MP_metrics_SS_func (int thread_num, int threadcount,
     for (col = 0; col < info->RnormL->rows; col++) {
       float lpp;
       /* Find principal curvatures */
-      eigen_symm2x2 (SURFACE_REF (info->Dyy, row, col),
-                     SURFACE_REF (info->Dxy, row, col),
-                     SURFACE_REF (info->Dxx, row, col),
+      eigen_symm2x2 (RUT_SURFACE_REF (info->Dyy, row, col),
+                     RUT_SURFACE_REF (info->Dxy, row, col),
+                     RUT_SURFACE_REF (info->Dxx, row, col),
                      &l1, &l2, &e11, &e12, &e21, &e22);
 
       /* Choose best direction and calculate Lp and Lpp */
@@ -66,16 +66,16 @@ MP_metrics_SS_func (int thread_num, int threadcount,
         e1 = e21; e2 = e22;
       }
 
-      if (info->Lpp) SURFACE_REF (info->Lpp, row, col) = lpp;
+      if (info->Lpp) RUT_SURFACE_REF (info->Lpp, row, col) = lpp;
       if (info->Lp) {
-        SURFACE_REF (info->Lp, row, col) =
-          (e1 * SURFACE_REF (info->Dy, row, col)
-           + e2 * SURFACE_REF (info->Dx, row, col));
+        RUT_SURFACE_REF (info->Lp, row, col) =
+          (e1 * RUT_SURFACE_REF (info->Dy, row, col)
+           + e2 * RUT_SURFACE_REF (info->Dx, row, col));
       }
 
       /* Calculate ridge strength metric */
       if (info->RnormL) {
-        SURFACE_REF (info->RnormL, row, col) =
+        RUT_SURFACE_REF (info->RnormL, row, col) =
           info->norm_func (l1, l2, info->scale);
       }
     }
@@ -83,8 +83,8 @@ MP_metrics_SS_func (int thread_num, int threadcount,
 }
 
 void
-MP_metrics_SS (Surface *src, float scale, int norm,
-               Surface *Lp, Surface *Lpp, Surface *RnormL)
+MP_metrics_SS (RutSurface *src, float scale, int norm,
+               RutSurface *Lp, RutSurface *Lpp, RutSurface *RnormL)
 {
   Filter *deriv;
   struct MPMetricsSSInfo *info;
@@ -97,11 +97,11 @@ MP_metrics_SS (Surface *src, float scale, int norm,
   info->Lp     = Lp;
   info->Lpp    = Lpp;
   info->RnormL = RnormL;
-  info->Dx     = surface_new_like (src);
-  info->Dy     = surface_new_like (src);
-  info->Dxx    = surface_new_like (src);
-  info->Dyy    = surface_new_like (src);
-  info->Dxy    = surface_new_like (src);
+  info->Dx     = rut_surface_new_like (src);
+  info->Dy     = rut_surface_new_like (src);
+  info->Dxx    = rut_surface_new_like (src);
+  info->Dyy    = rut_surface_new_like (src);
+  info->Dxy    = rut_surface_new_like (src);
   info->scale  = scale;
   switch (norm) {
   case METRICS_ANORM:
@@ -129,13 +129,13 @@ MP_metrics_SS (Surface *src, float scale, int norm,
   filter_destroy (deriv);
 
   /* Do metrics generation */
-  MP_task (MP_metrics_SS_func, (void *) info);
+  rut_multiproc_task (MP_metrics_SS_func, (void *) info);
 
   /* Clean up */
-  surface_destroy (info->Dx);
-  surface_destroy (info->Dy);
-  surface_destroy (info->Dxx);
-  surface_destroy (info->Dyy);
-  surface_destroy (info->Dxy);
+  rut_surface_destroy (info->Dx);
+  rut_surface_destroy (info->Dy);
+  rut_surface_destroy (info->Dxx);
+  rut_surface_destroy (info->Dyy);
+  rut_surface_destroy (info->Dxy);
   free (info);
 }

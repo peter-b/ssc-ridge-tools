@@ -40,7 +40,7 @@ usage (char *name, int status)
 "data to OUTFILE.\n"
 "\n"
 "Please report bugs to %s.\n",
-name, multiproc_threads, PACKAGE_BUGREPORT);
+name, rut_multiproc_threads, PACKAGE_BUGREPORT);
 
   exit (status);
 }
@@ -108,9 +108,8 @@ int
 main (int argc, char **argv)
 {
   char *filename, *out_filename = NULL;
-  Surface *image = NULL;
-  Surface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
-  Surface *mask = NULL;
+  RutSurface *image = NULL;
+  RutSurface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   RidgePointsSS *ridges = NULL;
   RidgeLinesSS *lines = NULL;
   Filter *filt;
@@ -153,7 +152,7 @@ main (int argc, char **argv)
         usage (argv[0], 1);
       }
     case 'j':
-      status = sscanf (optarg, "%i", &multiproc_threads);
+      status = sscanf (optarg, "%i", &rut_multiproc_threads);
       if (status != 1) {
         fprintf (stderr, "ERROR: Bad argument '%s' to -j option.\n\n",
                  optarg);
@@ -208,7 +207,7 @@ main (int argc, char **argv)
   n_scales -= (c-i-1);
 
   /* Load image */
-  image = surface_from_tiff (filename);
+  image = rut_surface_from_tiff (filename);
   if (!image) return 2; /* Should have already output a message */
 
   /* Create single-scale metrics for lowest scale requested. */
@@ -218,9 +217,9 @@ main (int argc, char **argv)
     filter_destroy (filt);
   }
 
-  Lp = surface_new_like (image);
-  Lpp = surface_new_like (image);
-  RnormL = surface_new_like (image);
+  Lp = rut_surface_new_like (image);
+  Lpp = rut_surface_new_like (image);
+  RnormL = rut_surface_new_like (image);
   MP_metrics_SS (image, scales[0], METRICS_NNORM, Lp, Lpp, RnormL);
 
   /* Find ridge points */
@@ -257,11 +256,10 @@ main (int argc, char **argv)
   }
 
   free (scales);
-  surface_destroy (image);
-  surface_destroy (Lp);
-  surface_destroy (Lpp);
-  surface_destroy (RnormL);
-  surface_destroy (mask);
+  rut_surface_destroy (image);
+  rut_surface_destroy (Lp);
+  rut_surface_destroy (Lpp);
+  rut_surface_destroy (RnormL);
 
   ridge_points_SS_destroy (ridges);
   ridge_lines_SS_destroy (lines);

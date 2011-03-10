@@ -11,14 +11,15 @@
 
 struct MPRidgeSegMaskSSInfo
 {
-  Surface *Lp, *Lpp, *mask;
+  RutSurface *Lp, *Lpp, *mask;
 };
 
 static inline float
-test_edge_SS (Surface *Lp, Surface *Lpp, int row, int col, int drow, int dcol)
+test_edge_SS (RutSurface *Lp, RutSurface *Lpp,
+              int row, int col, int drow, int dcol)
 {
-  float lp1 = SURFACE_REF (Lp, row, col);
-  float lp2 = SURFACE_REF (Lp, row + drow, col + dcol);
+  float lp1 = RUT_SURFACE_REF (Lp, row, col);
+  float lp2 = RUT_SURFACE_REF (Lp, row + drow, col + dcol);
   float x, lpp1, lpp2;
 
   /* Ensure that there is a zero-crossing of Lp on the edge */
@@ -31,14 +32,14 @@ test_edge_SS (Surface *Lp, Surface *Lpp, int row, int col, int drow, int dcol)
   assert (x <= 1);
 
   /* Interpolate value of Lpp */
-  lpp1 = SURFACE_REF (Lpp, row, col);
-  lpp2 = SURFACE_REF (Lpp, row + drow, col + dcol);
+  lpp1 = RUT_SURFACE_REF (Lpp, row, col);
+  lpp2 = RUT_SURFACE_REF (Lpp, row + drow, col + dcol);
   if (LINTERP (x, lpp1, lpp2) > 0) return -1;
   return x;
 }
 
 void
-ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, Surface *mask)
+ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, RutSurface *mask)
 {
   assert (mask->cols == ridges->cols);
   assert (mask->rows == ridges->rows);
@@ -46,13 +47,13 @@ ridge_points_SS_to_segments_mask (RidgePointsSS *ridges, Surface *mask)
   for (int row = 0; row < mask->rows; row++) {
     for (int col = 0; col < mask->cols; col++) {
       unsigned char flags = RIDGE_POINTS_SS_REF(ridges, row, col).flags;
-      SURFACE_REF (mask, row, col) = (count_bits_set (flags) == 2);
+      RUT_SURFACE_REF (mask, row, col) = (count_bits_set (flags) == 2);
     }
   }
 }
 
 void
-ridge_points_SS_to_points_mask (RidgePointsSS *ridges, Surface *mask)
+ridge_points_SS_to_points_mask (RidgePointsSS *ridges, RutSurface *mask)
 {
   assert (mask->cols == ridges->cols);
   assert (mask->rows == ridges->rows);
@@ -60,20 +61,20 @@ ridge_points_SS_to_points_mask (RidgePointsSS *ridges, Surface *mask)
   for (int row = 0; row < mask->rows; row++) {
     for (int col = 0; col < mask->cols; col++) {
       unsigned char flags = RIDGE_POINTS_SS_REF(ridges, row, col).flags;
-      SURFACE_REF (mask, row, col) =
+      RUT_SURFACE_REF (mask, row, col) =
         ((flags & (EDGE_FLAG_NORTH | EDGE_FLAG_WEST)) > 0);
     }
   }
 }
 
 RidgePointsSS *
-ridge_points_SS_new_for_surface (Surface *s)
+ridge_points_SS_new_for_surface (RutSurface *s)
 {
   RidgePointsSS *result = malloc (sizeof (RidgePointsSS));
   size_t len = sizeof (RidgePointsSSEntry) * s->rows * s->cols;
   result->rows = s->rows;
   result->cols = s->cols;
-  result->entries = MP_malloc (len);
+  result->entries = rut_multiproc_malloc (len);
   memset (result->entries, 0, len);
   return result;
 }
@@ -102,14 +103,14 @@ void
 ridge_points_SS_destroy (RidgePointsSS *r)
 {
   if (!r) return;
-  MP_free (r->entries);
+  rut_multiproc_free (r->entries);
   free (r);
 }
 
 struct MPRidgePointsSSInfo
 {
   RidgePointsSS *ridges;
-  Surface *Lp, *Lpp;
+  RutSurface *Lp, *Lpp;
 };
 
 static void
@@ -178,7 +179,7 @@ MP_ridge_points_SS_create_func (int thread_num, int thread_count, void *user_dat
 }
 
 void
-MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp)
+MP_ridge_points_SS (RidgePointsSS *ridges, RutSurface *Lp, RutSurface *Lpp)
 {
   struct MPRidgePointsSSInfo *info;
 
@@ -191,7 +192,7 @@ MP_ridge_points_SS (RidgePointsSS *ridges, Surface *Lp, Surface *Lpp)
   info->Lp = Lp;
   info->Lpp = Lpp;
 
-  MP_task (MP_ridge_points_SS_create_func, (void *) info);
+  rut_multiproc_task (MP_ridge_points_SS_create_func, (void *) info);
 
   free (info);
 }

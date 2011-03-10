@@ -11,7 +11,7 @@
 
 
 cairo_surface_t *
-surface_to_cairo (Surface *s, float limit)
+surface_to_cairo (RutSurface *s, float limit)
 {
   union crsdata {
     uint32_t v;
@@ -87,7 +87,7 @@ image_widget_expose_event (GtkWidget *widget, GdkEventExpose *event,
 }
 
 void
-show_surface_dialog (Surface *s, float limit) {
+show_surface_dialog (RutSurface *s, float limit) {
   GtkWidget *dialog, *content_area, *drawable;
   cairo_surface_t *img_surface;
 

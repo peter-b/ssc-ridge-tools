@@ -9,16 +9,16 @@
 #include "ridgeio.h"
 
 static float
-surface_interpolate (Surface *s, int r1, int c1, int r2, int c2,
+surface_interpolate (RutSurface *s, int r1, int c1, int r2, int c2,
                      unsigned char d)
 {
   return LINTERP ((float) d / 128.0f,
-                  SURFACE_REF (s, r1, c1),
-                  SURFACE_REF (s, r2, c2));
+                  RUT_SURFACE_REF (s, r1, c1),
+                  RUT_SURFACE_REF (s, r2, c2));
 }
 
 static int
-export_point (RidgePointsSS *ridges, Surface *image, Surface *RnormL,
+export_point (RidgePointsSS *ridges, RutSurface *image, RutSurface *RnormL,
               int row, int col, int dir, FILE *fp)
 {
   int row2, col2;
@@ -72,7 +72,7 @@ export_point (RidgePointsSS *ridges, Surface *image, Surface *RnormL,
 }
 
 int
-export_image_size (Surface *image, FILE *fp)
+export_image_size (RutSurface *image, FILE *fp)
 {
   RioData *d = rio_data_new (RIO_DATA_POINTS);
   rio_data_set_metadata_uint32 (d, RIO_KEY_IMAGE_ROWS, (uint32_t) image->rows);
@@ -83,8 +83,8 @@ export_image_size (Surface *image, FILE *fp)
 }
 
 int
-export_points (RidgePointsSS *ridges, Surface *image,
-               Surface *RnormL, const char *filename)
+export_points (RidgePointsSS *ridges, RutSurface *image,
+               RutSurface *RnormL, const char *filename)
 {
   int errsv;
   assert (ridges);
@@ -135,8 +135,8 @@ export_points (RidgePointsSS *ridges, Surface *image,
 }
 
 int
-export_segments (RidgePointsSS *ridges, Surface *image,
-                 Surface *RnormL, const char *filename)
+export_segments (RidgePointsSS *ridges, RutSurface *image,
+                 RutSurface *RnormL, const char *filename)
 {
   int errsv;
   assert (ridges);
@@ -189,7 +189,7 @@ export_segments (RidgePointsSS *ridges, Surface *image,
 
 int
 export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
-              Surface *image, Surface *RnormL, const char *filename)
+              RutSurface *image, RutSurface *RnormL, const char *filename)
 {
   int errsv;
   assert (ridges);

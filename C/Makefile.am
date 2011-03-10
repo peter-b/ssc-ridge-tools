@@ -26,17 +26,17 @@ ridgetool_SOURCES = \
 	filter.c \
 	line.c \
 	metrics.c \
-	multiproc.c \
 	ridges.c \
 	surface.c
 
-ridgetool_LDADD = libridgeio.a
+ridgetool_LDADD = libridgeutil.a libridgeio.a
 
 show_tiff_SOURCES = \
-	multiproc.c \
 	show-tiff.c \
 	surface.c \
 	gui_surface.c
+
+show_tiff_LDADD = libridgeutil.a
 
 EXTRA_DIST = \
 	gui_ridges.c
