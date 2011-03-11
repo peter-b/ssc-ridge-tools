@@ -1,4 +1,5 @@
-bin_PROGRAMS = ridgetool ridgeconv ridgecull show-tiff
+bin_PROGRAMS = ridgetool ridgeconv ridgecull
+noinst_PROGRAMS = show-tiff
 noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
 CFLAGS = -Wall -pedantic $(GTK_CFLAGS)
