@@ -48,6 +48,7 @@ void *rio_array_add_i (RioArray *array);
 #define rio_array_add(a, T) ((T *) rio_array_add_i (a))
 #define rio_array_get_item(a, i, T) ((T *) (a)->contents + (i))
 #define rio_array_get_length(a) ((a)->len)
+void rio_array_remove (RioArray *array, int index);
 
 RioData *rio_data_new (int type);
 void rio_data_destroy (RioData *data);
@@ -60,6 +61,7 @@ RioLine *rio_data_get_line (RioData *data, int index);
 #define rio_data_new_point(d) (rio_array_add(&d->contents, RioPoint))
 #define rio_data_new_segment(d) (rio_array_add(&d->contents, RioSegment))
 RioLine *rio_data_new_line (RioData *d);
+void rio_data_remove_entry (RioData *data, int index);
 
 const char *rio_data_get_metadata (RioData *data, uint32_t key,
                                    size_t *val_size);

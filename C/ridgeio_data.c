@@ -440,3 +440,14 @@ rio_data_set_metadata_uint32 (RioData *data, uint32_t key, uint32_t val)
 
   rio_data_set_metadata (data, key, (char *) buf, 4);
 }
+
+void
+rio_data_remove_entry (RioData *data, int index)
+{
+  assert (data);
+  if (index > rio_data_get_num_entries (data)) return;
+  if (rio_data_get_type (data) == RIO_DATA_LINES) {
+    rio_line_clear (rio_data_get_line (data, index));
+  }
+  rio_array_remove (&data->contents, index);
+}

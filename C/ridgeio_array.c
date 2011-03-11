@@ -41,3 +41,14 @@ void rio_array_clear (RioArray *array)
   free (array->contents);
   array->contents = NULL;
 }
+
+void
+rio_array_remove (RioArray *array, int index) {
+  if (index > array->len) return;
+  void *tgt = (void *) ((char *) array->contents
+                        + (array->size * index));
+  void *last = (void *) ((char *) array->contents
+                         + (array->size * (array->len - 1)));
+  memcpy (tgt, last, array->size);
+  array->len--;
+}
