@@ -36,8 +36,8 @@ ridgeconv_SOURCES = \
 	ridgeconv.h \
 	ridgeconv.c \
 	conv_csv.c \
-	conv_svg.c \
-	conv_tif.c
+	conv_mask.c \
+	conv_svg.c
 
 ridgeconv_LDADD = libridgeutil.a libridgeio.a
 

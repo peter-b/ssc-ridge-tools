@@ -13,10 +13,11 @@ enum {
   CONV_NONE,
   CONV_SVG,
   CONV_TIFF,
+  CONV_PNG,
   CONV_CSV,
 };
 
-#define GETOPT_OPTIONS "scth"
+#define GETOPT_OPTIONS "scpth"
 
 struct _ConvSuffix {
   const char *suffix;
@@ -27,6 +28,7 @@ struct _ConvSuffix conv_suffixes[] = {
   {"svg", CONV_SVG},
   {"tif", CONV_TIFF},
   {"tiff", CONV_TIFF},
+  {"png", CONV_PNG},
   {"csv", CONV_CSV},
   {NULL, CONV_NONE},
 };
@@ -41,6 +43,7 @@ usage (char *name, int status)
 "\n"
 "  -s              Generate SVG output [default]\n"
 "  -c              Generate CSV file\n"
+"  -p              Generate PNG mask\n"
 "  -t              Generate TIFF mask\n"
 "  -h              Display this message and exit\n"
 "\n"
@@ -73,6 +76,9 @@ main (int argc, char **argv)
       break;
     case 's':
       conv = CONV_SVG;
+      break;
+    case 'p':
+      conv = CONV_PNG;
       break;
     case 't':
       conv = CONV_TIFF;
@@ -142,9 +148,14 @@ main (int argc, char **argv)
   case CONV_TIFF:
     status = conv_tif (data, out_filename);
     break;
+  case CONV_PNG:
+    status = conv_png (data, out_filename);
+    break;
   default:
     abort ();
   }
+
+  rio_data_destroy (data);
 
   return status ? 0 : 3;
 }

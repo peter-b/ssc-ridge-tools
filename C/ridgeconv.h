@@ -6,5 +6,6 @@
 int conv_csv (RioData *data, const char *filename);
 int conv_svg (RioData *data, const char *filename);
 int conv_tif (RioData *data, const char *filename);
+int conv_png (RioData *data, const char *filename);
 
 #endif /* !__RIDGECONV_H__ */
