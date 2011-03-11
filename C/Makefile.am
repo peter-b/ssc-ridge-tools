@@ -1,4 +1,4 @@
-bin_PROGRAMS = ridgetool ridgeconv show-tiff
+bin_PROGRAMS = ridgetool ridgeconv ridgecull show-tiff
 noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
 CFLAGS = -Wall -pedantic $(GTK_CFLAGS)
@@ -39,6 +39,11 @@ ridgeconv_SOURCES = \
 	conv_tif.c
 
 ridgeconv_LDADD = libridgeutil.a libridgeio.a
+
+ridgecull_SOURCES = \
+	ridgecull.c
+
+ridgecull_LDADD = libridgeio.a
 
 show_tiff_SOURCES = \
 	show-tiff.c \
