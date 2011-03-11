@@ -156,6 +156,23 @@ rio_data_set_metadata (RioData *data, uint32_t key,
   }
 }
 
+void
+rio_data_take_metadata (RioData *data, uint32_t key,
+                        char *value, size_t val_size)
+{
+  RioMetadata *m = find_metadata (data, key, true);
+
+  if (m->val) {
+    free (m->val);
+    m->val = NULL;
+    m->val_size = 0;
+  }
+  if (value) {
+    m->val = value;
+    m->val_size = val_size;
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 
 int

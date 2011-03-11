@@ -65,6 +65,8 @@ const char *rio_data_get_metadata (RioData *data, uint32_t key,
                                    size_t *val_size);
 void rio_data_set_metadata (RioData *data, uint32_t key,
                             const char *value, size_t val_size);
+void rio_data_take_metadata (RioData *data, uint32_t key,
+                             char *value, size_t val_size);
 
 void rio_point_get_position (RioPoint *point, int *row, int *col);
 void rio_point_get_subpixel (RioPoint *point, double *row, double *col);
