@@ -18,6 +18,7 @@ test_edge_SS (RutSurface *Lp, RutSurface *Lpp,
   float x, lpp1, lpp2;
 
   /* Ensure that there is a zero-crossing of Lp on the edge */
+  if (isnan (lp1) || isnan (lp2)) return -1;
   if ((lp1 > 0) ^ (lp2 <= 0)) return -1;
 
   /* Calculate position along edge */
