@@ -8,7 +8,7 @@
 
 #include "ridgeconv.h"
 
-#define FIELD_SEP ", "
+#define FIELD_SEP ","
 
 static int
 csv_single_point (RioPoint *p, FILE *fp, bool trailing)
@@ -20,7 +20,7 @@ csv_single_point (RioPoint *p, FILE *fp, bool trailing)
   strength = rio_point_get_strength (p);
 
   /* Print the point info */
-  status = fprintf (fp, "%.3f%s %.3f%s %e%s %e%s",
+  status = fprintf (fp, "%.3f%s%.3f%s%e%s%e%s",
                     row, FIELD_SEP, col, FIELD_SEP,
                     brightness, FIELD_SEP, strength,
                     trailing ? FIELD_SEP : "\n");
