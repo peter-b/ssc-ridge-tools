@@ -49,7 +49,7 @@ MP_metrics_SS_func (int thread_num, int threadcount,
   num_rows = (thread_num + 1) * (info->RnormL->rows / threadcount) - first_row;
 
   for (row = first_row; row < first_row + num_rows; row++) {
-    for (col = 0; col < info->RnormL->rows; col++) {
+    for (col = 0; col < info->RnormL->cols; col++) {
       float lpp;
       /* Find principal curvatures */
       eigen_symm2x2 (RUT_SURFACE_REF (info->Dyy, row, col),
