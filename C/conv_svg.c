@@ -4,11 +4,12 @@
 #include <math.h>
 #include <cairo.h>
 #include <cairo-svg.h>
+#include <cairo-pdf.h>
 #include <gtk/gtk.h>
 
 #include "ridgeconv.h"
 
-#define POINT_RADIUS sqrt (1.0 / M_PI)
+#define POINT_RADIUS sqrt (2.0 / M_PI)
 
 static void
 svg_single_segment (RioPoint *start, RioPoint *end, cairo_t *cr)
@@ -62,30 +63,10 @@ svg_lines (RioData *data, cairo_t *cr)
   }
 }
 
-int
-conv_svg (RioData *data, const char *filename)
+static void
+svg_draw (RioData *data, cairo_surface_t *svg)
 {
-  int status;
-
-  /* Determine original image height & width */
-  uint32_t height, width;
-  status = rio_data_get_metadata_uint32 (data, RIO_KEY_IMAGE_ROWS, &height)
-    && rio_data_get_metadata_uint32 (data, RIO_KEY_IMAGE_COLS, &width);
-  if (!status) {
-    fprintf (stderr, "ERROR: Could not determine image dimensions.\n");
-    return 0;
-  }
-
-  /* Create output surface */
-  cairo_surface_t *svg = cairo_svg_surface_create (filename, width, height);
-  if (cairo_surface_status (svg) != CAIRO_STATUS_SUCCESS) {
-    fprintf (stderr, "ERROR: Could not create SVG surface for %s: %s\n",
-             filename, cairo_status_to_string (cairo_surface_status (svg)));
-    return 0;
-  }
-  /* FIXME naively assumes that all will be fine from now on. */
-
-  cairo_t *cr = cairo_create (svg);
+ cairo_t *cr = cairo_create (svg);
 
   /* Draw background */
   cairo_set_source_rgb (cr, 1, 1, 1);
@@ -111,6 +92,62 @@ conv_svg (RioData *data, const char *filename)
 
   /* Finalise surface */
   cairo_destroy (cr);
+}
+
+int
+conv_svg (RioData *data, const char *filename)
+{
+  int status;
+
+  /* Determine original image height & width */
+  uint32_t height, width;
+  status = rio_data_get_metadata_uint32 (data, RIO_KEY_IMAGE_ROWS, &height)
+    && rio_data_get_metadata_uint32 (data, RIO_KEY_IMAGE_COLS, &width);
+  if (!status) {
+    fprintf (stderr, "ERROR: Could not determine image dimensions.\n");
+    return 0;
+  }
+
+  /* Create output surface */
+  cairo_surface_t *svg = cairo_svg_surface_create (filename, width, height);
+  if (cairo_surface_status (svg) != CAIRO_STATUS_SUCCESS) {
+    fprintf (stderr, "ERROR: Could not create SVG surface for %s: %s\n",
+             filename, cairo_status_to_string (cairo_surface_status (svg)));
+    return 0;
+  }
+  /* FIXME naively assumes that all will be fine from now on. */
+
+  svg_draw (data, svg);
+
   cairo_surface_finish (svg);
   return 1;
-}
+ }
+
+int
+conv_pdf (RioData *data, const char *filename)
+{
+  int status;
+
+  /* Determine original image height & width */
+  uint32_t height, width;
+  status = rio_data_get_metadata_uint32 (data, RIO_KEY_IMAGE_ROWS, &height)
+    && rio_data_get_metadata_uint32 (data, RIO_KEY_IMAGE_COLS, &width);
+  if (!status) {
+    fprintf (stderr, "ERROR: Could not determine image dimensions.\n");
+    return 0;
+  }
+
+  /* Create output surface */
+  cairo_surface_t *pdf = cairo_pdf_surface_create (filename, width, height);
+  if (cairo_surface_status (pdf) != CAIRO_STATUS_SUCCESS) {
+    fprintf (stderr, "ERROR: Could not create PDF surface for %s: %s\n",
+             filename, cairo_status_to_string (cairo_surface_status (pdf)));
+    return 0;
+  }
+  /* FIXME naively assumes that all will be fine from now on. */
+
+  svg_draw (data, pdf);
+
+  cairo_surface_finish (pdf);
+  return 1;
+ }

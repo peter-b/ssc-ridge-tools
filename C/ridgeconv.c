@@ -15,9 +15,10 @@ enum {
   CONV_TIFF,
   CONV_PNG,
   CONV_CSV,
+  CONV_PDF,
 };
 
-#define GETOPT_OPTIONS "scpth"
+#define GETOPT_OPTIONS "sdcpth"
 
 struct _ConvSuffix {
   const char *suffix;
@@ -30,6 +31,7 @@ struct _ConvSuffix conv_suffixes[] = {
   {"tiff", CONV_TIFF},
   {"png", CONV_PNG},
   {"csv", CONV_CSV},
+  {"pdf", CONV_PDF},
   {NULL, CONV_NONE},
 };
 
@@ -42,6 +44,7 @@ usage (char *name, int status)
 "Convert ridge data files to other file types.\n"
 "\n"
 "  -s              Generate SVG output [default]\n"
+"  -d              Generate PDF output\n"
 "  -c              Generate CSV file\n"
 "  -p              Generate PNG mask\n"
 "  -t              Generate TIFF mask\n"
@@ -73,6 +76,9 @@ main (int argc, char **argv)
     switch (c) {
     case 'c':
       conv = CONV_CSV;
+      break;
+    case 'd':
+      conv = CONV_PDF;
       break;
     case 's':
       conv = CONV_SVG;
@@ -144,6 +150,9 @@ main (int argc, char **argv)
     break;
   case CONV_SVG:
     status = conv_svg (data, out_filename);
+    break;
+  case CONV_PDF:
+    status = conv_pdf (data, out_filename);
     break;
   case CONV_TIFF:
     status = conv_tif (data, out_filename);
