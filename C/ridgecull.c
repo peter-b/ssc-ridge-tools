@@ -165,11 +165,11 @@ main (int argc, char **argv)
   }
 
   /* Attempt to save output file */
-  status = rio_data_to_file (data, filename);
+  status = rio_data_to_file (data, out_filename);
   if (!status) {
     const char *msg = errno ? strerror (errno) : "Unexpected error";
     fprintf (stderr, "ERROR: Could not write ridge data to %s: %s\n",
-             filename, msg);
+             out_filename, msg);
     exit (3);
   }
 
