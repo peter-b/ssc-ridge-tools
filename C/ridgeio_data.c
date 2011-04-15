@@ -410,11 +410,11 @@ rio_data_from_file (const char *filename)
 int
 rio_data_get_metadata_uint32 (RioData *data, uint32_t key, uint32_t *val)
 {
-  const char *buf;
+  const unsigned char *buf;
   size_t buf_size;
   uint32_t v = 0;
 
-  buf = rio_data_get_metadata (data, key, &buf_size);
+  buf = (unsigned char *) rio_data_get_metadata (data, key, &buf_size);
   if (buf_size != 4) {
     fprintf (stderr, "WARNING: Metadata entry %i has length %zi "
              "(expected 4)\n", key, buf_size);
@@ -422,9 +422,10 @@ rio_data_get_metadata_uint32 (RioData *data, uint32_t key, uint32_t *val)
   }
 
   for (int i = 0; i < 4; i++) {
-    v = (v << 8) | buf[i];
+    v = (v << 8) + buf[i];
   }
   *val = v;
+
   return 1;
 }
 
