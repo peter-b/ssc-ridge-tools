@@ -151,6 +151,7 @@ main (int argc, char **argv)
                  optarg);
         usage (argv[0], 1);
       }
+      break;
     case 'j':
       status = sscanf (optarg, "%i", &rut_multiproc_threads);
       if (status != 1) {
@@ -222,15 +223,24 @@ main (int argc, char **argv)
   RnormL = rut_surface_new_like (image);
   MP_metrics_SS (image, scales[0], METRICS_NNORM, Lp, Lpp, RnormL);
 
+  /* Free up image to save memory */
+  rut_surface_destroy (image);
+
   /* Find ridge points */
-  ridges = ridge_points_SS_new_for_surface (image);
+  ridges = ridge_points_SS_new_for_surface (RnormL);
   MP_ridge_points_SS (ridges, Lp, Lpp);
+
+  rut_surface_destroy (Lp);
+  rut_surface_destroy (Lpp);
 
   if (mode == MODE_LINES) {
     /* Find ridge lines */
-    lines = ridge_lines_SS_new_for_surface (image);
+    lines = ridge_lines_SS_new_for_surface (RnormL);
     MP_ridge_lines_SS_build (lines, ridges);
   }
+
+  /* Re-load image */
+  image = rut_surface_from_tiff (filename);
 
   /* Generate output */
   if (out_filename) {
@@ -256,9 +266,6 @@ main (int argc, char **argv)
   }
 
   free (scales);
-  rut_surface_destroy (image);
-  rut_surface_destroy (Lp);
-  rut_surface_destroy (Lpp);
   rut_surface_destroy (RnormL);
 
   ridge_points_SS_destroy (ridges);
