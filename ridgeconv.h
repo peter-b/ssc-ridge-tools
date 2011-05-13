@@ -21,6 +21,9 @@
 
 #include "ridgeio.h"
 
+/* Each of these functions takes a ridge data set (see ridgeio.h) and
+ * exports it to a file in the appropriate format with the given
+ * filename. */
 int conv_csv (RioData *data, const char *filename);
 int conv_svg (RioData *data, const char *filename);
 int conv_pdf (RioData *data, const char *filename);

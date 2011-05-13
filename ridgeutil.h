@@ -16,10 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* The Ridge utils library abstracts out some commonly-used
+ * functionality; specifically, 2D image loading and saving from TIFF,
+ * and simple multiprocessing capabilities. */
+
 #ifndef __RIDGEUTIL_H__
 #define __RIDGEUTIL_H__
 
 #include <stddef.h>
+
+/* -------------------------------------------------------------------------- */
+
+/* A RutSurface represents a 2D image with 32-bit floating point precision. */
 
 typedef struct _RutSurface RutSurface;
 
@@ -28,7 +36,11 @@ struct _RutSurface {
   float *data;
 };
 
+/* Get a pointer to a pixel in a RutSurface at a specified position,
+ * where r is the row index and c the column index. */
 #define RUT_SURFACE_PTR(s,r,c) ((s)->data + (s)->cols * (r) + (c))
+/* Get the value of a pixel in a RutSurface at a specified position,
+ * where r is the row index and c the column index. */
 #define RUT_SURFACE_REF(s,r,c) (*RUT_SURFACE_PTR((s),(r),(c)))
 
 /* Create a new surface with the given number of rows and
@@ -75,6 +87,7 @@ int rut_multiproc_task (RutMultiProcFunc func, void *user_data);
  * controlling thread must be allocated via the following two
  * functions. */
 void *rut_multiproc_malloc (size_t size);
+/* Does nothing if ptr is NULL. */
 void rut_multiproc_free (void *ptr);
 
 #endif /* !__RIDGEUTIL_H__ */
