@@ -27,17 +27,21 @@
 
 #define MIN(x,y) ((x < y) ? x : y)
 
+/* Describes a ridge mask. Each pixel in the mask is set to 0xff if it
+ * contains a ridge, and 0x00 otherwise. */
 struct Mask {
   int height, width;
   uint8_t *data;
 };
 
+/* Marks the mask pixel at (row, col) as containing a ridge. */
 static inline void
 mask_set (struct Mask *m, int row, int col)
 {
   m->data[row*m->width + col] = 0xff;
 }
 
+/* Adds the point p to the mask m */
 static void
 mask_point (RioPoint *p, struct Mask *m)
 {
@@ -46,6 +50,7 @@ mask_point (RioPoint *p, struct Mask *m)
   mask_set (m, row >> 7, col >> 7);
 }
 
+/* Adds the segment joining p and q to the mask m */
 static void
 mask_segment (RioPoint *p, RioPoint *q, struct Mask *m)
 {
@@ -57,6 +62,7 @@ mask_segment (RioPoint *p, RioPoint *q, struct Mask *m)
   mask_set (m, row[0] >> 7, col[0] >> 7);
 }
 
+/* Create a mask from ridge data */
 static struct Mask *
 mask_create (RioData *data)
 {
@@ -109,6 +115,7 @@ mask_create (RioData *data)
   return m;
 }
 
+/* Free a mask structure */
 static void
 mask_free (struct Mask *m) {
   if (!m) return;
@@ -116,6 +123,7 @@ mask_free (struct Mask *m) {
   free (m);
 }
 
+/* Create a PNG format mask with the given filename from ridge data */
 int
 conv_png (RioData *data, const char *filename)
 {
@@ -172,6 +180,7 @@ conv_png (RioData *data, const char *filename)
   return status;
 }
 
+/* Create a TIFF image mask with the given filename from ridge data */
 int
 conv_tif (RioData *data, const char *filename)
 {

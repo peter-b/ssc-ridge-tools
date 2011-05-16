@@ -28,6 +28,10 @@
 
 #define FIELD_SEP ","
 
+/* Write the point p to the file stream fp as a series of
+ * comma-separated values. If trailing is true, write a comma at the
+ * end of the sequence; otherwise, write a new line character. Returns
+ * non-zero on success. */
 static int
 csv_single_point (RioPoint *p, FILE *fp, bool trailing)
 {
@@ -46,6 +50,8 @@ csv_single_point (RioPoint *p, FILE *fp, bool trailing)
   return (status >= 0);
 }
 
+/* Write ridge point data to the file pointer fp as comma-separated
+ * values. */
 static int
 csv_points (RioData *data, FILE *fp)
 {
@@ -56,6 +62,10 @@ csv_points (RioData *data, FILE *fp)
   return 1;
 }
 
+
+/* Write ridge segment data to the file pointer fp as comma-separated
+ * values. Each line contains the values for the start of the segment
+ * followed by the values for the end of the line. */
 static int
 csv_segments (RioData *data, FILE *fp)
 {
@@ -69,6 +79,10 @@ csv_segments (RioData *data, FILE *fp)
   return 1;
 }
 
+/* Write ridge line data to the file pointer fp as comma-separated
+ * values.  Each row contains the values for a point on the current
+ * ridge line.  Ridge lines are separated by blank rows in the file.
+ */
 static int
 csv_lines (RioData *data, FILE *fp)
 {
@@ -83,6 +97,10 @@ csv_lines (RioData *data, FILE *fp)
   return 1;
 }
 
+/* Export ridge data to filename as comma-separated values. If the
+ * filename is a hyphen '-', data is output to stdout.  If the file
+ * exists, it is overwritten; otherwise, it is created. Returns
+ * non-zero on success. */
 int
 conv_csv (RioData *data, const char *filename)
 {
