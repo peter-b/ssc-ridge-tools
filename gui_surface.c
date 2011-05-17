@@ -66,7 +66,7 @@ surface_to_cairo (RutSurface *s, float limit)
     for (j = 0; j < s->cols; j++) {
       int v;
       /* Calculate source and destination pointers */
-      srcptr = s->data + i * s->cols + j;
+      srcptr = RUT_SURFACE_PTR (s, i, j);
       destptr = dest + i * stride + j * sizeof(union crsdata);
       components = (union crsdata *) destptr;
 
