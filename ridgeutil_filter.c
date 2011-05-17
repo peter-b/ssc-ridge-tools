@@ -27,69 +27,6 @@
 
 /* -------------------------------------------------------------------------- */
 
-/* A SurfaceView provides a vector-like "view" of a single row or
- * single column of a RutSurface. This is to facilitate separable filtering. */
-
-typedef struct _SurfaceView SurfaceView;
-
-struct _SurfaceView {
-  int len;
-  int ofs;
-  int stride;
-  RutSurface *target;
-};
-
-/* Creates a new surface view backed by target. The surface view is
- * otherwise uninitialised. */
-static SurfaceView *
-surface_view_new (RutSurface *target)
-{
-  SurfaceView *result;
-  assert (target);
-
-  result = malloc (sizeof (SurfaceView));
-  result->len = 0;
-  result->ofs = 0;
-  result->stride = 0;
-  result->target = target;
-
-  return result;
-}
-
-/* Destroys a surface view. */
-static void
-surface_view_destroy (SurfaceView *view)
-{
-  if (view) free (view);
-}
-
-/* Set view to a particular row of the target RutSurface. */
-static void surface_view_set_row (SurfaceView *view, int row)
-{
-  assert (view);
-  assert (view->target);
-  assert (row >= 0);
-  assert (row < view->target->rows);
-
-  view->len = view->target->cols;
-  view->ofs = view->target->cols * row;
-  view->stride = 1;
-}
-
-/* Set view to a particular column of the target RutSurface. */
-static void surface_view_set_col (SurfaceView *view, int col) {
-  assert (view);
-  assert (view->target);
-  assert (col >= 0);
-  assert (col < view->target->cols);
-
-  view->len = view->target->rows;
-  view->ofs = col;
-  view->stride = view->target->cols;
-}
-
-/* -------------------------------------------------------------------------- */
-
 RutFilter *
 rut_filter_new (int len) {
   RutFilter *result = malloc (sizeof(RutFilter));
@@ -173,33 +110,30 @@ struct MPFilterInfo {
 };
 
 static void
-rut_filter_conv (RutFilter *f, SurfaceView *src, SurfaceView *dest,
-             float *buffer)
+rut_filter_conv (RutFilter *f, RutSurface *src, RutSurface *dest,
+                 float *buffer)
 {
   int i, j;
-  float *srcptr, *destptr, *filtptr;
+  float *srcptr, *filtptr;
 
   /* Do convolution into buffer */
-  for (i = 0; i < dest->len; i++) {
+  for (i = 0; i < dest->cols; i++) {
     float v = 0;
 
     for (j = - f->ofs; j < (f->len - f->ofs); j++) {
       int src_idx = i - j;
-      if (src_idx < 0 || src_idx >= src->len) continue;
-      srcptr = src->target->data + src->ofs + (src->stride * src_idx);
+      if (src_idx < 0 || src_idx >= src->cols) continue;
       filtptr = f->data + f->ofs + j;
 
-      v += (*filtptr) * (*srcptr);
+      v += (*filtptr) * RUT_SURFACE_REF (src, 0, src_idx);
     }
     buffer[i] = v;
   }
 
   /* Copy buffer into destination */
   srcptr = buffer;
-  destptr = dest->target->data + dest->ofs;
-  for (i = 0; i < dest->len; i++) {
-    *destptr = *srcptr;
-    destptr += dest->stride;
+  for (i = 0; i < dest->cols; i++) {
+    RUT_SURFACE_REF (dest, 0, i) = *srcptr;
     srcptr++;
   }
 }
@@ -210,44 +144,45 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
   struct MPFilterInfo *info = (struct MPFilterInfo *) user_data;
   int first, count, i;
   float *buffer;
-  SurfaceView *srcview, *destview;
-  void (*set_view_func)(SurfaceView *, int);
+  RutSurface *src, *dest;
+  RutSurface *srcview, *destview;
 
   assert (info);
   assert (info->src);
   assert (info->dest);
 
-  /* Allocate buffers etc. */
-  srcview = surface_view_new (info->src);
-  destview = surface_view_new (info->dest);
+  src = rut_surface_new_view (info->src);
+  dest = rut_surface_new_view (info->dest);
 
-  switch (info->direction) {
-  case RUT_FILTER_ROWS:
-    first = thread_num * (info->src->rows / threadcount);
-    count = (thread_num + 1) * (info->src->rows / threadcount) - first;
-    buffer = malloc (info->src->cols * sizeof (float));
-    set_view_func = surface_view_set_row;
-    break;
-  case RUT_FILTER_COLS:
-    first = thread_num * (info->src->cols / threadcount);
-    count = (thread_num + 1) * (info->src->cols / threadcount) - first;
-    buffer = malloc (info->src->rows * sizeof (float));
-    set_view_func = surface_view_set_col;
-    break;
-  default:
-    abort();
+  /* Transpose the src/dest surfaces if necessary to ensure that we
+   * always convolve along rows. */
+  if (info->direction == RUT_FILTER_COLS) {
+    rut_surface_transpose (src);
+    rut_surface_transpose (dest);
   }
+
+  /* Allocate buffers etc. */
+  first = thread_num * (src->rows / threadcount);
+  count = (thread_num + 1) * (src->rows / threadcount) - first;
+  buffer = malloc (src->cols * sizeof (float));
+
+  /* Create views of single rows */
+  srcview = rut_surface_new_row_view (src, first);
+  destview = rut_surface_new_row_view (dest, first);
 
   /* Do convolution along each row and/or col */
   for (i = 0; i < count; i++) {
-    set_view_func (srcview, first + i);
-    set_view_func (destview, first + i);
-
     rut_filter_conv (info->filt, srcview, destview, buffer);
+
+    /* FIXME naughty pointer hacks to save recreating surface views */
+    srcview->data += src->rowstep;
+    destview->data += dest->rowstep;
   }
 
-  surface_view_destroy (srcview);
-  surface_view_destroy (destview);
+  rut_surface_destroy (srcview);
+  rut_surface_destroy (destview);
+  rut_surface_destroy (src);
+  rut_surface_destroy (dest);
   free (buffer);
 }
 
