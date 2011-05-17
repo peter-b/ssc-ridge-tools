@@ -29,7 +29,7 @@
 #include "ridgetool.h"
 #include "ridgetool_gui.h"
 
-#define GETOPT_OPTIONS "l:h"
+#define GETOPT_OPTIONS "l:th"
 
 static void
 usage (char *name, int status)
@@ -53,6 +53,7 @@ main (int argc, char **argv)
 {
   int c, status;
   float limit = NAN;
+  int transpose = 0;
   char *filename;
   RutSurface *s;
 
@@ -65,6 +66,9 @@ main (int argc, char **argv)
                  optarg);
         usage (argv[0], 1);
       }
+      break;
+    case 't':
+      transpose = 1;
       break;
     case 'h':
       usage (argv[0], 0);
@@ -95,6 +99,8 @@ main (int argc, char **argv)
   /* Load and display file */
   s = rut_surface_from_tiff (filename);
   if (!s) exit (1);
+
+  if (transpose) rut_surface_transpose (s);
 
   gtk_init (&argc, &argv);
   if (isnan (limit)) {
