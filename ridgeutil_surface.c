@@ -31,6 +31,9 @@ rut_surface_new (int rows, int cols) {
   size_t len = rows * cols * sizeof (float);
   result->rows = rows;
   result->cols = cols;
+  result->rowstep = cols;
+  result->colstep = 1;
+  result->is_view = 0;
   result->data = rut_multiproc_malloc (len);
   return result;
 }
@@ -44,7 +47,9 @@ void
 rut_surface_destroy (RutSurface *s)
 {
   if (!s) return;
-  rut_multiproc_free (s->data);
+  if (!s->is_view) {
+    rut_multiproc_free (s->data);
+  }
   free (s);
 }
 
@@ -170,4 +175,57 @@ rut_surface_to_tiff (RutSurface *s, const char *filename)
   if (buffer) free (buffer);
   fprintf (stderr, "Could not save TIFF to %s\n", filename);
   return 0;
+}
+
+RutSurface *
+rut_surface_new_view (RutSurface *s)
+{
+  assert (s);
+  RutSurface *result = malloc (sizeof (RutSurface));
+  result->rows = s->rows;
+  result->cols = s->cols;
+  result->rowstep = s->rowstep;
+  result->colstep = s->colstep;
+  result->is_view = 1;
+  result->data = s->data;
+  return result;
+}
+
+RutSurface *
+rut_surface_new_row_view (RutSurface *s, int row)
+{
+  assert (s);
+  assert (row >= 0 && row < s->rows);
+  RutSurface *result = rut_surface_new_view (s);
+  /* Set up single row view */
+  result->data = RUT_SURFACE_PTR (result, row, 0);
+  result->rows = 1;
+  return result;
+}
+
+RutSurface *
+rut_surface_new_column_view (RutSurface *s, int col)
+{
+  assert (s);
+  assert (col >= 0 && col < s->cols);
+  RutSurface *result = rut_surface_new_view (s);
+  /* Set up single column view */
+  result->data = RUT_SURFACE_PTR (result, 0, col);
+  result->cols = 1;
+  return result;
+}
+
+void
+rut_surface_transpose (RutSurface *s)
+{
+  int tmp;
+  assert (s);
+
+  tmp = s->rows;
+  s->rows = s->cols;
+  s->cols = tmp;
+
+  tmp = s->rowstep;
+  s->rowstep = s->colstep;
+  s->colstep = tmp;
 }

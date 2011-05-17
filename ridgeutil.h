@@ -36,12 +36,14 @@ typedef struct _RutSurface RutSurface;
 
 struct _RutSurface {
   int rows, cols;
+  int rowstep, colstep;
+  int is_view;
   float *data;
 };
 
 /* Get a pointer to a pixel in a RutSurface at a specified position,
  * where r is the row index and c the column index. */
-#define RUT_SURFACE_PTR(s,r,c) ((s)->data + (s)->cols * (r) + (c))
+#define RUT_SURFACE_PTR(s,r,c) ((s)->data + (s)->rowstep * (r) + (s)->colstep * (c))
 /* Get the value of a pixel in a RutSurface at a specified position,
  * where r is the row index and c the column index. */
 #define RUT_SURFACE_REF(s,r,c) (*RUT_SURFACE_PTR((s),(r),(c)))
@@ -53,6 +55,18 @@ RutSurface *rut_surface_new (int rows, int cols);
 /* Create a new surface with the same dimensions as the surface s.
  * The backing memory is not initialised. */
 RutSurface *rut_surface_new_like (RutSurface *s);
+
+/* Create a new surface as a view of the surface s. */
+RutSurface *rut_surface_new_view (RutSurface *s);
+
+/* Create a new surface view of a row of the surface s. */
+RutSurface *rut_surface_new_row_view (RutSurface *s, int row);
+
+/* Create a new surface view of a column of the surface s. */
+RutSurface *rut_surface_new_column_view (RutSurface *s, int col);
+
+/* Swap rows and columns of a surface. */
+void rut_surface_transpose (RutSurface *s);
 
 /* Create a new surface by reading data from the 32-bit floating
  * point, single channel TIFF file specified by filename.  If an error
