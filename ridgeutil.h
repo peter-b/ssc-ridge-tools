@@ -25,6 +25,9 @@
 
 #include <stddef.h>
 
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+
 /* -------------------------------------------------------------------------- */
 
 /* A RutSurface represents a 2D image with 32-bit floating point precision. */
