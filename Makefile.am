@@ -2,7 +2,7 @@ bin_PROGRAMS = ridgetool ridgeconv ridgecull
 noinst_PROGRAMS = show-tiff
 noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
-CFLAGS = -Wall -pedantic $(GTK_CFLAGS)
+CFLAGS = -g -Wall -pedantic $(GTK_CFLAGS)
 LDFLAGS = -lm -ltiff $(GTK_LIBS)
 
 libridgeutil_a_SOURCES = \
