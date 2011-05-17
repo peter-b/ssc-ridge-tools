@@ -104,7 +104,7 @@ void
 MP_metrics_SS (RutSurface *src, float scale, int norm,
                RutSurface *Lp, RutSurface *Lpp, RutSurface *RnormL)
 {
-  Filter *deriv;
+  RutFilter *deriv;
   struct MPMetricsSSInfo *info;
 
   assert (src);
@@ -136,15 +136,15 @@ MP_metrics_SS (RutSurface *src, float scale, int norm,
   }
 
   /* Calculate derivatives */
-  deriv = filter_new_deriv ();
+  deriv = rut_filter_new_deriv ();
 
-  MP_filter (deriv, src,      info->Dx, FILTER_FLAG_ROWS);
-  MP_filter (deriv, src,      info->Dy, FILTER_FLAG_COLS);
-  MP_filter (deriv, info->Dx, info->Dxx, FILTER_FLAG_ROWS);
-  MP_filter (deriv, info->Dy, info->Dyy, FILTER_FLAG_COLS);
-  MP_filter (deriv, info->Dx, info->Dxy, FILTER_FLAG_COLS);
+  rut_filter_apply_mp (deriv, src,      info->Dx, RUT_FILTER_ROWS);
+  rut_filter_apply_mp (deriv, src,      info->Dy, RUT_FILTER_COLS);
+  rut_filter_apply_mp (deriv, info->Dx, info->Dxx, RUT_FILTER_ROWS);
+  rut_filter_apply_mp (deriv, info->Dy, info->Dyy, RUT_FILTER_COLS);
+  rut_filter_apply_mp (deriv, info->Dx, info->Dxy, RUT_FILTER_COLS);
 
-  filter_destroy (deriv);
+  rut_filter_destroy (deriv);
 
   /* Do metrics generation */
   rut_multiproc_task (MP_metrics_SS_func, (void *) info);

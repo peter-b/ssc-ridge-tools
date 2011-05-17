@@ -130,7 +130,7 @@ main (int argc, char **argv)
   RutSurface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   RidgePointsSS *ridges = NULL;
   RidgeLinesSS *lines = NULL;
-  Filter *filt;
+  RutFilter *filt;
   int c, i;
   int n_scales = 0;
   float *scales = NULL;;
@@ -230,10 +230,11 @@ main (int argc, char **argv)
   if (!image) return 2; /* Should have already output a message */
 
   /* Create single-scale metrics for lowest scale requested. */
-  filt = filter_new_gaussian (scales[0]);
+  filt = rut_filter_new_gaussian (scales[0]);
   if (filt) {
-    MP_filter (filt, image, image, FILTER_FLAG_ROWS | FILTER_FLAG_COLS);
-    filter_destroy (filt);
+    rut_filter_apply_mp (filt, image, image,
+                         RUT_FILTER_ROWS | RUT_FILTER_COLS);
+    rut_filter_destroy (filt);
   }
 
   Lp = rut_surface_new_like (image);

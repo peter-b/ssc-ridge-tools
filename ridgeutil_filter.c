@@ -23,11 +23,76 @@
 #include <assert.h>
 #include <string.h>
 
-#include "ridgetool.h"
+#include "ridgeutil.h"
 
-Filter *
-filter_new (int len) {
-  Filter *result = malloc (sizeof(Filter));
+/* -------------------------------------------------------------------------- */
+
+/* A SurfaceView provides a vector-like "view" of a single row or
+ * single column of a RutSurface. This is to facilitate separable filtering. */
+
+typedef struct _SurfaceView SurfaceView;
+
+struct _SurfaceView {
+  int len;
+  int ofs;
+  int stride;
+  RutSurface *target;
+};
+
+/* Creates a new surface view backed by target. The surface view is
+ * otherwise uninitialised. */
+static SurfaceView *
+surface_view_new (RutSurface *target)
+{
+  SurfaceView *result;
+  assert (target);
+
+  result = malloc (sizeof (SurfaceView));
+  result->len = 0;
+  result->ofs = 0;
+  result->stride = 0;
+  result->target = target;
+
+  return result;
+}
+
+/* Destroys a surface view. */
+static void
+surface_view_destroy (SurfaceView *view)
+{
+  if (view) free (view);
+}
+
+/* Set view to a particular row of the target RutSurface. */
+static void surface_view_set_row (SurfaceView *view, int row)
+{
+  assert (view);
+  assert (view->target);
+  assert (row >= 0);
+  assert (row < view->target->rows);
+
+  view->len = view->target->cols;
+  view->ofs = view->target->cols * row;
+  view->stride = 1;
+}
+
+/* Set view to a particular column of the target RutSurface. */
+static void surface_view_set_col (SurfaceView *view, int col) {
+  assert (view);
+  assert (view->target);
+  assert (col >= 0);
+  assert (col < view->target->cols);
+
+  view->len = view->target->rows;
+  view->ofs = col;
+  view->stride = view->target->cols;
+}
+
+/* -------------------------------------------------------------------------- */
+
+RutFilter *
+rut_filter_new (int len) {
+  RutFilter *result = malloc (sizeof(RutFilter));
   result->len = len;
   result->ofs = 0;
   result->data = malloc (len * sizeof (float));
@@ -35,19 +100,19 @@ filter_new (int len) {
 }
 
 void
-filter_destroy (Filter *f) {
+rut_filter_destroy (RutFilter *f) {
   if (!f) return;
   free (f->data);
   free (f);
 }
 
-Filter *
-filter_new_gaussian (float variance)
+RutFilter *
+rut_filter_new_gaussian (float variance)
 {
   int N = lrintf (3 * variance);
   int len;
   int i, j;
-  Filter *f;
+  RutFilter *f;
   float *buffer, *tmp;
 
   if (N < 1) {
@@ -56,7 +121,7 @@ filter_new_gaussian (float variance)
     len = 3 + 2 * (N - 1);
   }
 
-  f = filter_new (len);
+  f = rut_filter_new (len);
   f->ofs = (len - 1) / 2;
 
 #ifdef PRECISE_GAUSSIAN
@@ -90,9 +155,9 @@ filter_new_gaussian (float variance)
   return f;
 }
 
-Filter *filter_new_deriv ()
+RutFilter *rut_filter_new_deriv ()
 {
-  Filter *result = filter_new (3);
+  RutFilter *result = rut_filter_new (3);
   result->ofs = 1;
   result->data[0] = -0.5f;
   result->data[1] = 0;
@@ -101,14 +166,14 @@ Filter *filter_new_deriv ()
 }
 
 struct MPFilterInfo {
-  Filter *filt;
+  RutFilter *filt;
   RutSurface *src;
   RutSurface *dest;
   int direction;
 };
 
 static void
-filter_conv (Filter *f, SurfaceView *src, SurfaceView *dest,
+rut_filter_conv (RutFilter *f, SurfaceView *src, SurfaceView *dest,
              float *buffer)
 {
   int i, j;
@@ -157,13 +222,13 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
   destview = surface_view_new (info->dest);
 
   switch (info->direction) {
-  case FILTER_FLAG_ROWS:
+  case RUT_FILTER_ROWS:
     first = thread_num * (info->src->rows / threadcount);
     count = (thread_num + 1) * (info->src->rows / threadcount) - first;
     buffer = malloc (info->src->cols * sizeof (float));
     set_view_func = surface_view_set_row;
     break;
-  case FILTER_FLAG_COLS:
+  case RUT_FILTER_COLS:
     first = thread_num * (info->src->cols / threadcount);
     count = (thread_num + 1) * (info->src->cols / threadcount) - first;
     buffer = malloc (info->src->rows * sizeof (float));
@@ -178,7 +243,7 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
     set_view_func (srcview, first + i);
     set_view_func (destview, first + i);
 
-    filter_conv (info->filt, srcview, destview, buffer);
+    rut_filter_conv (info->filt, srcview, destview, buffer);
   }
 
   surface_view_destroy (srcview);
@@ -187,7 +252,7 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
 }
 
 void
-MP_filter (Filter *f, RutSurface *src, RutSurface *dest, int flags)
+rut_filter_apply_mp (RutFilter *f, RutSurface *src, RutSurface *dest, int flags)
 {
   struct MPFilterInfo *info;
   int in_place = ((dest == NULL) || (dest == src));
@@ -202,7 +267,7 @@ MP_filter (Filter *f, RutSurface *src, RutSurface *dest, int flags)
   }
 
   /* If no filtering to do, just memcpy from src to dest */
-  if (!(flags & FILTER_FLAG_ROWS || flags & FILTER_FLAG_COLS)) {
+  if (!(flags & RUT_FILTER_ROWS || flags & RUT_FILTER_COLS)) {
     if (!in_place) {
       memcpy (dest->data, src->data,
               sizeof (float) * src->rows * src->cols);
@@ -216,8 +281,8 @@ MP_filter (Filter *f, RutSurface *src, RutSurface *dest, int flags)
   info->src = src;
   info->dest = dest;
 
-  if (flags & FILTER_FLAG_ROWS) {
-    info->direction = FILTER_FLAG_ROWS;
+  if (flags & RUT_FILTER_ROWS) {
+    info->direction = RUT_FILTER_ROWS;
     rut_multiproc_task (MP_filter_func, (void *) info);
 
     /* If there's another convolution, we need to make sure to apply
@@ -225,8 +290,8 @@ MP_filter (Filter *f, RutSurface *src, RutSurface *dest, int flags)
     info->src = dest;
   }
 
-  if (flags & FILTER_FLAG_COLS) {
-    info->direction = FILTER_FLAG_COLS;
+  if (flags & RUT_FILTER_COLS) {
+    info->direction = RUT_FILTER_COLS;
     rut_multiproc_task (MP_filter_func, (void *) info);
   }
 

@@ -7,6 +7,7 @@ LDFLAGS = -lm -ltiff $(GTK_LIBS)
 
 libridgeutil_a_SOURCES = \
 	ridgeutil.h \
+	ridgeutil_filter.c \
 	ridgeutil_surface.c \
 	ridgeutil_multiproc.c
 
@@ -24,11 +25,9 @@ ridgetool_SOURCES = \
 	ridgetool.c \
 	eigen.c \
 	export.c \
-	filter.c \
 	line.c \
 	metrics.c \
-	ridges.c \
-	surface.c
+	ridges.c
 
 ridgetool_LDADD = libridgeutil.a libridgeio.a
 

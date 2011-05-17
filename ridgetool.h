@@ -26,66 +26,6 @@
 
 /* -------------------------------------------------------------------------- */
 
-/* A SurfaceView provides a vector-like "view" of a single row or
- * single column of a RutSurface. This is to facilitate separable filtering. */
-
-typedef struct _SurfaceView SurfaceView;
-
-struct _SurfaceView {
-  int len;
-  int ofs;
-  int stride;
-  RutSurface *target;
-};
-
-/* Creates a new surface view backed by target. The surface view is
- * otherwise uninitialised. */
-SurfaceView *surface_view_new (RutSurface *target);
-
-/* Destroys a surface view. */
-void surface_view_destroy (SurfaceView *view);
-
-/* Set view to a particular row of the target RutSurface. */
-void surface_view_set_row (SurfaceView *view, int row);
-/* Set view to a particular column of the target RutSurface. */
-void surface_view_set_col (SurfaceView *view, int col);
-
-/* -------------------------------------------------------------------------- */
-
-/* A Filter represents a arbitrary finite impulse response filter,
- * based on an array of values. The ofs field sets the n=0 point in
- * the filter. */
-
-typedef struct _Filter Filter;
-
-struct _Filter {
-  int len;
-  int ofs;
-  float *data;
-};
-
-/* These flags are used to indicate the directions along which a */
-
-enum {
-  FILTER_FLAG_ROWS = 1 << 0,
-  FILTER_FLAG_COLS = 1 << 1,
-};
-
-/* Create a new filter of length len. */
-Filter *filter_new (int len);
-/* Create a new derivative filter */
-Filter *filter_new_deriv ();
-/* Create a new Gaussian filter with a given variance */
-Filter *filter_new_gaussian (float variance);
-/* Destroy a filter, releasing its resources */
-void filter_destroy (Filter *f);
-/* Apply a filter to an image surface.  The flags specify which
- * dimensions to apply the filter along.  Filtering can be carried out
- * in-place by specifying dest=src or dest=NULL. */
-void MP_filter (Filter *f, RutSurface *src, RutSurface *dest, int flags);
-
-/* -------------------------------------------------------------------------- */
-
 /* Enumeration of different ridge strength metrics. See Lindeberg 1998
  * for details. */
 enum {

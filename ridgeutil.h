@@ -65,6 +65,42 @@ void rut_surface_destroy (RutSurface *s);
 
 /* -------------------------------------------------------------------------- */
 
+/* A Filter represents an arbitrary single-dimension finite impulse
+ * response filter, based on an array of values. The ofs field sets
+ * the n=0 point in the filter. */
+
+typedef struct _RutFilter RutFilter;
+
+struct _RutFilter {
+  int len;
+  int ofs;
+  float *data;
+};
+
+/* Create a new filter of length len. */
+RutFilter *rut_filter_new (int len);
+/* Create a new derivative filter */
+RutFilter *rut_filter_new_deriv ();
+/* Create a new Gaussian filter with a given variance */
+RutFilter *rut_filter_new_gaussian (float variance);
+/* Destroy a filter, releasing its resources */
+void rut_filter_destroy (RutFilter *f);
+
+/* These flags are used to indicate the directions along which a
+ * filter should be applied.*/
+enum {
+  RUT_FILTER_ROWS = 1 << 0,
+  RUT_FILTER_COLS = 1 << 1,
+};
+
+/* Apply a filter to an image surface.  The flags specify which
+ * dimensions to apply the filter along.  Filtering can be carried out
+ * in-place by specifying dest=src or dest=NULL. */
+void rut_filter_apply_mp (RutFilter *f, RutSurface *src,
+                          RutSurface *dest, int flags);
+
+/* -------------------------------------------------------------------------- */
+
 /* Global variable controlling how many parallel processes to use */
 extern int rut_multiproc_threads;
 
