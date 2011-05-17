@@ -109,7 +109,7 @@ MP_ridge_points_SS_create_func (int thread_num, int thread_count, void *user_dat
   num_rows = (thread_num + 1) * (info->Lp->rows / thread_count) - first_row;
 
   /* First populate previous row buffer */
-  for (col = 0; col < info->ridges->cols; col++) {
+  for (col = 0; col < info->ridges->cols - 1; col++) {
     float v = test_edge_SS (info->Lp, info->Lpp, first_row, col, 0, 1);
     prev_row[col] = (v < 0) ? 255 : rintf (v * 128);
   }
