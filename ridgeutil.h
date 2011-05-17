@@ -41,9 +41,24 @@ struct _RutSurface {
   float *data;
 };
 
+#ifndef DEBUG_SURFACE
 /* Get a pointer to a pixel in a RutSurface at a specified position,
  * where r is the row index and c the column index. */
-#define RUT_SURFACE_PTR(s,r,c) ((s)->data + (s)->rowstep * (r) + (s)->colstep * (c))
+  #define RUT_SURFACE_PTR(s,r,c) \
+((s)->data + (s)->rowstep * (r) + (s)->colstep * (c))
+
+#else
+  #include <assert.h>
+static inline float *
+RUT_SURFACE_PTR (RutSurface *s, int r, int c)
+{
+  assert (s);
+  assert (r >= 0 && r < s->rows);
+  assert (c >= 0 && c < s->cols);
+  return s->data + s->rowstep * r + s->colstep * c;
+}
+#endif /* !DEBUG_SURFACE */
+
 /* Get the value of a pixel in a RutSurface at a specified position,
  * where r is the row index and c the column index. */
 #define RUT_SURFACE_REF(s,r,c) (*RUT_SURFACE_PTR((s),(r),(c)))
