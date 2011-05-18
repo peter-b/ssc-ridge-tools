@@ -146,6 +146,7 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
   float *buffer;
   RutSurface *src, *dest;
   RutSurface *srcview, *destview;
+  RutExtents extents;
 
   assert (info);
   assert (info->src);
@@ -167,8 +168,12 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
   buffer = malloc (src->cols * sizeof (float));
 
   /* Create views of single rows */
-  srcview = rut_surface_new_row_view (src, first);
-  destview = rut_surface_new_row_view (dest, first);
+  extents.top = first;
+  extents.left = 0;
+  extents.height = 1;
+  extents.width = src->cols;
+  srcview = rut_surface_new_view_extents (src, &extents);
+  destview = rut_surface_new_view_extents (dest, &extents);
 
   /* Do convolution along each row and/or col */
   for (i = 0; i < count; i++) {

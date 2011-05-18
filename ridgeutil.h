@@ -28,6 +28,15 @@
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 
+typedef struct _RutExtents RutExtents;
+
+struct _RutExtents {
+  int top; /* First row */
+  int left; /* First column */
+  int height; /* Number of rows */
+  int width; /* Number of columns */
+};
+
 /* -------------------------------------------------------------------------- */
 
 /* A RutSurface represents a 2D image with 32-bit floating point precision. */
@@ -74,11 +83,8 @@ RutSurface *rut_surface_new_like (RutSurface *s);
 /* Create a new surface as a view of the surface s. */
 RutSurface *rut_surface_new_view (RutSurface *s);
 
-/* Create a new surface view of a row of the surface s. */
-RutSurface *rut_surface_new_row_view (RutSurface *s, int row);
-
-/* Create a new surface view of a column of the surface s. */
-RutSurface *rut_surface_new_column_view (RutSurface *s, int col);
+/* Create a new surface as a view of the surface s. */
+RutSurface *rut_surface_new_view_extents (RutSurface *s, RutExtents *extents);
 
 /* Swap rows and columns of a surface. */
 void rut_surface_transpose (RutSurface *s);

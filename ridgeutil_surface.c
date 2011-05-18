@@ -192,26 +192,20 @@ rut_surface_new_view (RutSurface *s)
 }
 
 RutSurface *
-rut_surface_new_row_view (RutSurface *s, int row)
+rut_surface_new_view_extents (RutSurface *s, RutExtents *extents)
 {
   assert (s);
-  assert (row >= 0 && row < s->rows);
+  assert (extents);
+  assert (extents->top >= 0 && extents->top < s->rows);
+  assert (extents->left >= 0 && extents->left < s->cols);
+  assert (extents->height > 0 && extents->top + extents->height <= s->cols);
+  assert (extents->width > 0 && extents->left + extents->width <= s->cols);
+
   RutSurface *result = rut_surface_new_view (s);
   /* Set up single row view */
-  result->data = RUT_SURFACE_PTR (result, row, 0);
-  result->rows = 1;
-  return result;
-}
-
-RutSurface *
-rut_surface_new_column_view (RutSurface *s, int col)
-{
-  assert (s);
-  assert (col >= 0 && col < s->cols);
-  RutSurface *result = rut_surface_new_view (s);
-  /* Set up single column view */
-  result->data = RUT_SURFACE_PTR (result, 0, col);
-  result->cols = 1;
+  result->data = RUT_SURFACE_PTR (result, extents->top, extents->left);
+  result->rows = extents->height;
+  result->cols = extents->width;
   return result;
 }
 
