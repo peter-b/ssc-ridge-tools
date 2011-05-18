@@ -182,19 +182,14 @@ rut_surface_new_view (RutSurface *s)
 {
   assert (s);
   RutSurface *result = malloc (sizeof (RutSurface));
-  result->rows = s->rows;
-  result->cols = s->cols;
-  result->rowstep = s->rowstep;
-  result->colstep = s->colstep;
+  memcpy (result, s, sizeof (RutSurface));
   result->is_view = 1;
-  result->data = s->data;
   return result;
 }
 
 RutSurface *
 rut_surface_new_view_extents (RutSurface *s, RutExtents *extents)
 {
-  assert (s);
   assert (extents);
   assert (extents->top >= 0 && extents->top < s->rows);
   assert (extents->left >= 0 && extents->left < s->cols);
