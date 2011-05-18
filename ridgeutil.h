@@ -33,8 +33,10 @@ typedef struct _RutExtents RutExtents;
 struct _RutExtents {
   int top; /* First row */
   int left; /* First column */
+  int scale; /* Smallest scale */
   int height; /* Number of rows */
   int width; /* Number of columns */
+  int n_scales; /* Number of scales */
 };
 
 /* -------------------------------------------------------------------------- */
@@ -100,6 +102,67 @@ int rut_surface_to_tiff (RutSurface *s, const char *filename);
 
 /* Destroys a surface, freeing the underlying memory */
 void rut_surface_destroy (RutSurface *s);
+
+/* -------------------------------------------------------------------------- */
+
+/* A RutScaleSpace represents a 3D scale space as a set of image planes. */
+
+typedef struct _RutScaleSpace RutScaleSpace;
+
+struct _RutScaleSpace {
+  int rows;
+  int cols;
+  int n_scales;
+  int rowstep, colstep, scalestep;
+  int is_view;
+  float *scales;
+  float *data;
+};
+
+#define RUT_SCALE_SPACE_PTR(ss,r,c,s) \
+  ((ss)->data + (ss)->rowstep * (r) + (ss)->colstep * (c) + (ss)->scalestep * (s))
+
+#define RUT_SCALE_SPACE_REF(ss,r,c,s) (*RUT_SCALE_SPACE_PTR(ss,r,c,s))
+
+enum {
+  RUT_SCALE_SPACE_ROWS = 1,
+  RUT_SCALE_SPACE_COLS = 2,
+  RUT_SCALE_SPACE_SCALE = 3,
+};
+
+/* Create a scale space from an image surface. The scales are sorted
+ * and any duplicate values removed, so it is not valid to assume that
+ * the ordering and number of scales in the generated scale space will
+ * be the same as passed in.  Additionally, if libridgeutil was
+ * compiled without the PRECISE_GAUSSIAN flag, scales will be rounded
+ * to the nearest 1/3. */
+RutScaleSpace *rut_scale_space_generate_mp (RutSurface *image,
+                                            int n_scales,
+                                            const float *scales);
+
+/* Destroy a scale space, freeing any allocated resources. */
+void rut_scale_space_destroy (RutScaleSpace *s);
+
+/* Create an empty scale space with the same dimensions and scales as
+ * another scale space. */
+RutScaleSpace *rut_scale_space_new_like (RutScaleSpace *s);
+
+/* Create a scale space view. */
+RutScaleSpace *rut_scale_space_new_view (RutScaleSpace *s);
+
+/* Create a scale space view limited to a particular subspace of the
+ * original scale space. */
+RutScaleSpace *rut_scale_space_new_view_extents (RutScaleSpace *s,
+                                                 RutExtents *extents);
+
+/* Obtain a planar cross-section of the scale space as an image
+ * surface view (i.e. changes to the surface are applied to the scale
+ * space). The axis is the axis normal to the plane, and the offset is
+ * the position of the plane along that axis. For example, to get the
+ * image at a particular scale N, you would call
+ * rut_scale_space_get_surface (scale_space, RUT_SCALE_SPACE_SCALE,
+ * N). */
+RutSurface *rut_scale_space_get_surface (RutScaleSpace *s, int axis, int offset);
 
 /* -------------------------------------------------------------------------- */
 

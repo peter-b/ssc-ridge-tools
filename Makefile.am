@@ -8,6 +8,7 @@ LDFLAGS = -lm -ltiff $(GTK_LIBS)
 libridgeutil_a_SOURCES = \
 	ridgeutil.h \
 	ridgeutil_filter.c \
+	ridgeutil_scalespace.c \
 	ridgeutil_surface.c \
 	ridgeutil_multiproc.c
 
