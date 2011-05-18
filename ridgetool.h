@@ -22,7 +22,24 @@
 #ifndef __RIDGETOOL_H__
 #define __RIDGETOOL_H__
 
+#include <stdint.h>
+
 #include "ridgeutil.h"
+
+#if SIZEOF_INTPTR_T == 4
+#  define int2ptr_t int64_t
+#endif
+
+#if SIZEOF_INTPTR_T == 8
+#  ifndef HAVE___INT128_T
+#    error The __int128_t type is required on this architecture.
+#  endif
+#  define int2ptr_t __int128_t
+#endif
+
+#if SIZEOF_INTPTR_T != 4 && SIZEOF_INTPTR_T != 8
+#error Unsupported pointer size
+#endif
 
 /* -------------------------------------------------------------------------- */
 
@@ -121,15 +138,15 @@ union _RidgeLinesSSEntry {
   /* Set member form */
   struct {
       RidgeLinesSSEntry *parent;
-      unsigned long long rank;
+      intptr_t rank;
   } v;
   /* Doubly-linked list member form */
   struct {
     RidgeLinesSSEntry *next;
     RidgeLinesSSEntry *prev;
   } l;
-  /* 128-bit integer form */
-  __int128_t i;
+  /* double-pointer integer form */
+  int2ptr_t i;
 };
 
 /* Structure for all ridge line data for an image */

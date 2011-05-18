@@ -36,6 +36,7 @@
 /* ------------------------------------------------------ */
 
 /* We need to provide this, because GCC sucks. */
+#if SIZEOF_INTPTR_T == 8
 bool
 __sync_bool_compare_and_swap_16 (__int128_t *ptr,
                                  __int128_t oldval,
@@ -78,6 +79,7 @@ __sync_bool_compare_and_swap_16 (__int128_t *ptr,
 
   return result;
 }
+#endif
 
 /* ------------------------------------------------------ */
 
@@ -94,8 +96,8 @@ set_cas (volatile RidgeLinesSSEntry *ptr,
          RidgeLinesSSEntry compare,
          RidgeLinesSSEntry value)
 {
-  assert (sizeof (RidgeLinesSSEntry) == sizeof (__int128_t));
-  return __sync_bool_compare_and_swap ((__int128_t *) ptr,
+  assert (sizeof (RidgeLinesSSEntry) == sizeof (int2ptr_t));
+  return __sync_bool_compare_and_swap ((int2ptr_t *) ptr,
                                        compare.i,
                                        value.i);
 }
