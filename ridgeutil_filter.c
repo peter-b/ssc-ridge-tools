@@ -209,11 +209,14 @@ rut_filter_surface_mp (RutFilter *f, RutSurface *src, RutSurface *dest,
     dest = src;
   }
 
-  /* If no filtering to do, just memcpy from src to dest */
+  /* If no filtering to do, just copy from src to dest */
   if (!(flags & RUT_SURFACE_ROWS || flags & RUT_SURFACE_COLS)) {
     if (!in_place) {
-      memcpy (dest->data, src->data,
-              sizeof (float) * src->rows * src->cols);
+      for (int i = 0; i < src->rows; i++) {
+        for (int j = 0; i < src->cols; i++) {
+          RUT_SURFACE_REF (dest, i, j) = RUT_SURFACE_REF (src, i, j);
+        }
+      }
     }
     return;
   }
