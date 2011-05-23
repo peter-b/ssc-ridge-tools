@@ -10,6 +10,7 @@ libridgeutil_a_SOURCES = \
 	ridgeutil_filter.c \
 	ridgeutil_scalespace.c \
 	ridgeutil_surface.c \
+	ridgeutil_tiffio.c \
 	ridgeutil_multiproc.c
 
 libridgeio_a_SOURCES = \
