@@ -198,6 +198,12 @@ void rut_filter_destroy (RutFilter *f);
 void rut_filter_surface_mp (RutFilter *f, RutSurface *src,
                             RutSurface *dest, int flags);
 
+/* Apply a filter to a scale space.  The flags specify which
+ * dimensions to apply the filter along.  Filtering can be carried out
+ * in-place by specifying dest=src or dest=NULL. */
+void rut_filter_scale_space_mp (RutFilter *f, RutScaleSpace *src,
+                                RutScaleSpace *dest, int flags);
+
 /* -------------------------------------------------------------------------- */
 
 /* Tiff utility functions */

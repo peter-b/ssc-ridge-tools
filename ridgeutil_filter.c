@@ -240,3 +240,82 @@ rut_filter_surface_mp (RutFilter *f, RutSurface *src, RutSurface *dest,
 
   free (info);
 }
+
+void
+rut_filter_scale_space_mp (RutFilter *f, RutScaleSpace *src,
+                           RutScaleSpace *dest, int flags)
+{
+  RutSurface *ssrc, *sdest;
+  int sflags;
+  int in_place = ((dest == NULL) || (dest == src));
+
+  assert (f);
+  assert (src);
+  if (!in_place) {
+    assert (src->rows == dest->rows);
+    assert (src->cols == dest->cols);
+    assert (src->n_scales == dest->n_scales);
+  } else {
+    dest = src;
+  }
+
+  /* If no filtering to do, just copy from src to dest */
+  if ((flags & (RUT_SCALE_SPACE_ROWS | RUT_SCALE_SPACE_COLS |
+                RUT_SCALE_SPACE_SCALE)) == 0) {
+    if (!in_place) {
+      for (int i = 0; i < src->n_scales; i++) {
+        for (int j = 0; j < src->rows; j++) {
+          for (int k = 0; k < src->cols; k++) {
+            /* FIXME Ewww nested loops */
+            RUT_SCALE_SPACE_REF (dest, j, k, i) =
+              RUT_SCALE_SPACE_REF (src, j, k, i);
+          }
+        }
+      }
+    }
+    return;
+  }
+
+  /* FIXME This is a little bit ugly, but it's good enough because
+   * it's actually pretty cheap to generate views, and because the
+   * most common operations are either in scale plane or along scale
+   * axis only. */
+
+  if (flags & (RUT_SCALE_SPACE_ROWS | RUT_SCALE_SPACE_COLS)) {
+    /* Flags for in-surface filtering step */
+    sflags = ((flags & RUT_SCALE_SPACE_COLS ? RUT_SURFACE_COLS : 0) |
+              (flags & RUT_SCALE_SPACE_ROWS ? RUT_SURFACE_ROWS : 0));
+
+    for (int i = 0; i < src->n_scales; i++) {
+      /* Create surfaces for filtering */
+      ssrc = rut_scale_space_get_surface (src, RUT_SCALE_SPACE_SCALE, i);
+      sdest = rut_scale_space_get_surface (dest, RUT_SCALE_SPACE_SCALE, i);
+
+      /* Filter within surface */
+      rut_filter_surface_mp (f, ssrc, sdest, sflags);
+
+      /* Destroy surfaces */
+      rut_surface_destroy (ssrc);
+      rut_surface_destroy (sdest);
+    }
+
+    /* If the scale-axis pass follows, it needs to be in-place. */
+    src = dest;
+  }
+
+  /* Second pass is always in-place on destination space. */
+  if (flags & RUT_SCALE_SPACE_SCALE) {
+    for (int i = 0; i < src->rows; i++) {
+      /* Create surfaces for filtering */
+      ssrc = rut_scale_space_get_surface (src, RUT_SCALE_SPACE_SCALE, i);
+      sdest = rut_scale_space_get_surface (dest, RUT_SCALE_SPACE_ROWS, i);
+
+      /* Filter within surface */
+      rut_filter_surface_mp (f, ssrc, sdest, RUT_SURFACE_COLS);
+
+      /* Destroy surfaces */
+      rut_surface_destroy (ssrc);
+      rut_surface_destroy (sdest);
+    }
+  }
+}
