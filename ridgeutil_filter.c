@@ -194,7 +194,8 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
 }
 
 void
-rut_filter_apply_mp (RutFilter *f, RutSurface *src, RutSurface *dest, int flags)
+rut_filter_surface_mp (RutFilter *f, RutSurface *src, RutSurface *dest,
+                       int flags)
 {
   struct MPFilterInfo *info;
   int in_place = ((dest == NULL) || (dest == src));

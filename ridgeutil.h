@@ -197,8 +197,8 @@ enum {
 /* Apply a filter to an image surface.  The flags specify which
  * dimensions to apply the filter along.  Filtering can be carried out
  * in-place by specifying dest=src or dest=NULL. */
-void rut_filter_apply_mp (RutFilter *f, RutSurface *src,
-                          RutSurface *dest, int flags);
+void rut_filter_surface_mp (RutFilter *f, RutSurface *src,
+                            RutSurface *dest, int flags);
 
 /* -------------------------------------------------------------------------- */
 

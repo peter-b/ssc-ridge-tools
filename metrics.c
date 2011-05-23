@@ -138,11 +138,11 @@ MP_metrics_SS (RutSurface *src, float scale, int norm,
   /* Calculate derivatives */
   deriv = rut_filter_new_deriv ();
 
-  rut_filter_apply_mp (deriv, src,      info->Dx, RUT_FILTER_ROWS);
-  rut_filter_apply_mp (deriv, src,      info->Dy, RUT_FILTER_COLS);
-  rut_filter_apply_mp (deriv, info->Dx, info->Dxx, RUT_FILTER_ROWS);
-  rut_filter_apply_mp (deriv, info->Dy, info->Dyy, RUT_FILTER_COLS);
-  rut_filter_apply_mp (deriv, info->Dx, info->Dxy, RUT_FILTER_COLS);
+  rut_filter_surface_mp (deriv, src,      info->Dx, RUT_FILTER_ROWS);
+  rut_filter_surface_mp (deriv, src,      info->Dy, RUT_FILTER_COLS);
+  rut_filter_surface_mp (deriv, info->Dx, info->Dxx, RUT_FILTER_ROWS);
+  rut_filter_surface_mp (deriv, info->Dy, info->Dyy, RUT_FILTER_COLS);
+  rut_filter_surface_mp (deriv, info->Dx, info->Dxy, RUT_FILTER_COLS);
 
   rut_filter_destroy (deriv);
 
