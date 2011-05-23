@@ -74,6 +74,11 @@ RUT_SURFACE_PTR (RutSurface *s, int r, int c)
  * where r is the row index and c the column index. */
 #define RUT_SURFACE_REF(s,r,c) (*RUT_SURFACE_PTR((s),(r),(c)))
 
+enum {
+  RUT_SURFACE_ROWS = 1 << 0,
+  RUT_SURFACE_COLS = 1 << 1,
+};
+
 /* Create a new surface with the given number of rows and
  * columns.  The backing memory is not initialised. */
 RutSurface *rut_surface_new (int rows, int cols);
@@ -186,13 +191,6 @@ RutFilter *rut_filter_new_deriv ();
 RutFilter *rut_filter_new_gaussian (float variance);
 /* Destroy a filter, releasing its resources */
 void rut_filter_destroy (RutFilter *f);
-
-/* These flags are used to indicate the directions along which a
- * filter should be applied.*/
-enum {
-  RUT_FILTER_ROWS = 1 << 0,
-  RUT_FILTER_COLS = 1 << 1,
-};
 
 /* Apply a filter to an image surface.  The flags specify which
  * dimensions to apply the filter along.  Filtering can be carried out

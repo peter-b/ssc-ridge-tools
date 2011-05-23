@@ -159,7 +159,7 @@ MP_filter_func (int thread_num, int threadcount, void *user_data)
 
   /* Transpose the src/dest surfaces if necessary to ensure that we
    * always convolve along rows. */
-  if (info->direction == RUT_FILTER_COLS) {
+  if (info->direction == RUT_SURFACE_COLS) {
     rut_surface_transpose (src);
     rut_surface_transpose (dest);
   }
@@ -210,7 +210,7 @@ rut_filter_surface_mp (RutFilter *f, RutSurface *src, RutSurface *dest,
   }
 
   /* If no filtering to do, just memcpy from src to dest */
-  if (!(flags & RUT_FILTER_ROWS || flags & RUT_FILTER_COLS)) {
+  if (!(flags & RUT_SURFACE_ROWS || flags & RUT_SURFACE_COLS)) {
     if (!in_place) {
       memcpy (dest->data, src->data,
               sizeof (float) * src->rows * src->cols);
@@ -224,8 +224,8 @@ rut_filter_surface_mp (RutFilter *f, RutSurface *src, RutSurface *dest,
   info->src = src;
   info->dest = dest;
 
-  if (flags & RUT_FILTER_ROWS) {
-    info->direction = RUT_FILTER_ROWS;
+  if (flags & RUT_SURFACE_ROWS) {
+    info->direction = RUT_SURFACE_ROWS;
     rut_multiproc_task (MP_filter_func, (void *) info);
 
     /* If there's another convolution, we need to make sure to apply
@@ -233,8 +233,8 @@ rut_filter_surface_mp (RutFilter *f, RutSurface *src, RutSurface *dest,
     info->src = dest;
   }
 
-  if (flags & RUT_FILTER_COLS) {
-    info->direction = RUT_FILTER_COLS;
+  if (flags & RUT_SURFACE_COLS) {
+    info->direction = RUT_SURFACE_COLS;
     rut_multiproc_task (MP_filter_func, (void *) info);
   }
 

@@ -202,7 +202,8 @@ rut_scale_space_generate_mp (RutSurface *image, int n_scales,
   /* Special case first scale */
   filt = rut_filter_new_gaussian (result->scales[0]);
   dest = rut_scale_space_get_surface (result, RUT_SCALE_SPACE_SCALE, 0);
-  rut_filter_surface_mp (filt, image, dest, RUT_FILTER_ROWS | RUT_FILTER_COLS);
+  rut_filter_surface_mp (filt, image, dest,
+                         RUT_SURFACE_ROWS | RUT_SURFACE_COLS);
   rut_filter_destroy (filt);
 
   /* Progressively generate larger scales */
@@ -210,7 +211,8 @@ rut_scale_space_generate_mp (RutSurface *image, int n_scales,
   for (int i = 1; i < result->n_scales; i++) {
     filt = rut_filter_new_gaussian (result->scales[i] - result->scales[i-1]);
     dest = rut_scale_space_get_surface (result, RUT_SCALE_SPACE_SCALE, 0);
-    rut_filter_surface_mp (filt, src, dest, RUT_FILTER_ROWS | RUT_FILTER_COLS);
+    rut_filter_surface_mp (filt, src, dest,
+                           RUT_SURFACE_ROWS | RUT_SURFACE_COLS);
     rut_filter_destroy (filt);
 
     /* Rotate surfaces */
@@ -225,7 +227,8 @@ rut_scale_space_generate_mp (RutSurface *image, int n_scales,
     filt = rut_filter_new_gaussian (result->scales[i]);
     dest = rut_scale_space_get_surface (result, RUT_SCALE_SPACE_SCALE, i);
 
-    rut_filter_surface_mp (filt, image, dest, RUT_FILTER_ROWS | RUT_FILTER_COLS);
+    rut_filter_surface_mp (filt, image, dest,
+                           RUT_SURFACE_ROWS | RUT_SURFACE_COLS);
 
     rut_filter_destroy (filt);
     rut_surface_destroy (dest);

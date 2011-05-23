@@ -233,7 +233,7 @@ main (int argc, char **argv)
   filt = rut_filter_new_gaussian (scales[0]);
   if (filt) {
     rut_filter_surface_mp (filt, image, image,
-                           RUT_FILTER_ROWS | RUT_FILTER_COLS);
+                           RUT_SURFACE_ROWS | RUT_SURFACE_COLS);
     rut_filter_destroy (filt);
   }
 
