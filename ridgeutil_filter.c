@@ -52,6 +52,8 @@ rut_filter_new_gaussian (float variance)
   RutFilter *f;
   float *buffer, *tmp;
 
+  assert (variance >= 0); /* Sanity check */
+
   if (N < 1) {
     return NULL;
   } else {

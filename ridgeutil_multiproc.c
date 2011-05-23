@@ -36,6 +36,7 @@
 #include "ridgeutil.h"
 
 int rut_multiproc_threads = 1;
+int rut_multiproc_in_child = 0;
 
 int
 rut_multiproc_task (void (*func)(int, int, void *), void *user_data)
@@ -46,8 +47,9 @@ rut_multiproc_task (void (*func)(int, int, void *), void *user_data)
 
   assert (func);
 
-  /* Short-circuit the single-threaded case */
-  if (rut_multiproc_threads < 2) {
+  /* Short-circuit the single-threaded case. If this is already a
+   * child process, force single thread. */
+  if (rut_multiproc_threads < 2 || rut_multiproc_in_child) {
     func (0, 1, user_data);
     return success;
   }
@@ -60,6 +62,7 @@ rut_multiproc_task (void (*func)(int, int, void *), void *user_data)
 
     /* If this is the child process, run the function and exit */
     if (!child) {
+      rut_multiproc_in_child = 1;
       func (i, rut_multiproc_threads, user_data);
       exit (0);
     }
