@@ -148,3 +148,31 @@ rut_surface_to_tiff (RutSurface *s, const char *filename)
   fprintf (stderr, "Could not save TIFF to %s\n", filename);
   return 0;
 }
+
+int
+rut_tiff_get_size (const char *filename, int *rows, int *cols)
+{
+  TIFF *tif = NULL;
+  int result = 0;
+  uint32 width, length;
+
+  /* Open TIFF file */
+  tif = TIFFOpen (filename, "rb");
+  if (!tif) {
+    goto sizefail;
+  }
+
+  /* Get tags */
+  if (!(TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &width) &&
+        TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &length))) {
+    goto sizefail;
+  }
+
+  *rows = (int) width;
+  *cols = (int) length;
+  result = 1; /* Success */
+
+ sizefail:
+  TIFFClose (tif);
+  return result;
+}

@@ -202,6 +202,14 @@ void rut_filter_apply_mp (RutFilter *f, RutSurface *src,
 
 /* -------------------------------------------------------------------------- */
 
+/* Tiff utility functions */
+
+/* Obtain the dimensions of a TIFF file without loading it, returning
+ * true on success. */
+int rut_tiff_get_size (const char *filename, int *rows, int *cols);
+
+/* -------------------------------------------------------------------------- */
+
 /* Global variable controlling how many parallel processes to use */
 extern int rut_multiproc_threads;
 
