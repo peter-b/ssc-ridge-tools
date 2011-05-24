@@ -210,7 +210,7 @@ rut_scale_space_generate_mp (RutSurface *image, int n_scales,
   src = dest;
   for (int i = 1; i < result->n_scales; i++) {
     filt = rut_filter_new_gaussian (result->scales[i] - result->scales[i-1]);
-    dest = rut_scale_space_get_surface (result, RUT_SCALE_SPACE_SCALE, 0);
+    dest = rut_scale_space_get_surface (result, RUT_SCALE_SPACE_SCALE, i);
     rut_filter_surface_mp (filt, src, dest,
                            RUT_SURFACE_ROWS | RUT_SURFACE_COLS);
     rut_filter_destroy (filt);
