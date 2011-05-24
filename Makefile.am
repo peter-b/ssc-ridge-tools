@@ -1,5 +1,5 @@
 bin_PROGRAMS = ridgetool ridgeconv ridgecull
-noinst_PROGRAMS = show-tiff
+noinst_PROGRAMS = show-tiff scalespacegen
 noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
 CFLAGS = -g -Wall -pedantic $(GTK_CFLAGS)
@@ -52,6 +52,11 @@ show_tiff_SOURCES = \
 	gui_surface.c
 
 show_tiff_LDADD = libridgeutil.a
+
+scalespacegen_SOURCES = \
+	scalespacegen.c
+
+scalespacegen_LDADD = libridgeutil.a
 
 EXTRA_DIST = \
 	gui_ridges.c
