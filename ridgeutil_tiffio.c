@@ -25,8 +25,17 @@
 
 #include "ridgeutil.h"
 
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+
 RutSurface *
 rut_surface_from_tiff (const char *filename)
+{
+  return rut_surface_from_tiff_extents (filename, NULL);
+}
+
+RutSurface *
+rut_surface_from_tiff_extents (const char *filename, RutExtents *extents)
 {
   TIFF *tif = NULL;
   uint32 width, length, rows_per_strip;
@@ -34,6 +43,8 @@ rut_surface_from_tiff (const char *filename)
   RutSurface *result = NULL;
   char *buffer = NULL;
   int i, j, row;
+
+  int first_row, last_row, first_col, last_col;
 
   /* Open TIFF file */
   tif = TIFFOpen (filename, "rb");
@@ -48,6 +59,18 @@ rut_surface_from_tiff (const char *filename)
         TIFFGetField (tif, TIFFTAG_BITSPERSAMPLE, &bits_per_sample) &&
         TIFFGetField (tif, TIFFTAG_SAMPLESPERPIXEL, &samples_per_pixel))) {
     goto loadfail;
+  }
+
+  /* Calculate extents of area of image to be loaded */
+  first_row = 0;
+  last_row = length - 1;
+  first_col = 0;
+  last_col = width - 1;
+  if (extents) {
+    first_row = MAX (extents->top, first_row);
+    last_row = MIN (extents->height + extents->top, last_row);
+    first_col = MAX (extents->left, first_col);
+    last_col = MIN (extents->width + extents->left, last_col);
   }
 
   /* Validate compatibility */
@@ -65,7 +88,7 @@ rut_surface_from_tiff (const char *filename)
 
   /* Read data */
   for (i = 0, row = 0; i < TIFFNumberOfStrips (tif); i++) {
-    int size = TIFFReadEncodedStrip (tif, i, buffer, TIFFStripSize (tif));
+    size_t size = TIFFReadEncodedStrip (tif, i, buffer, TIFFStripSize (tif));
     int numrows = size/(width * 4);
     if (size % (width * 4) != 0) {
       /* Oops, not an integer number of rows! */
@@ -73,9 +96,14 @@ rut_surface_from_tiff (const char *filename)
     }
 
     for (j = 0; j < numrows; j++, row++) {
-      char *src = buffer + j*width*4;
-      float *dest = RUT_SURFACE_PTR (result, row, 0);
-      memcpy (dest, src, width*4);
+      if ((row < first_row) || (row > last_row)) continue;
+      for (int col = 0; col < width; col++) {
+        if ((col < first_col) || (col > last_col)) continue;
+        union { char c[4]; float f; } val;
+        char *src = &buffer[4 * (j * width + col)];
+        memcpy (&val.c[0], src, 4);
+        RUT_SURFACE_REF (result, row - first_row, col - first_col) = val.f;
+      }
     }
   }
 
@@ -123,7 +151,7 @@ rut_surface_to_tiff (RutSurface *s, const char *filename)
   buffer = malloc (TIFFStripSize (tif));
 
   for (row = 0, strip = 0; strip < num_strips; strip++) {
-    int size = 0;
+    size_t size = 0;
     for (i = 0; (i < rows_per_strip) && (row < s->rows); i++, row++) {
       float *src = RUT_SURFACE_PTR (s, row, 0);
       char *dest = buffer + i*s->cols*4;

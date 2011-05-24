@@ -101,6 +101,13 @@ void rut_surface_transpose (RutSurface *s);
  * occurs, returns NULL. */
 RutSurface *rut_surface_from_tiff (const char *filename);
 
+/* Create a new surface by reading data from the 32-bit floating
+ * point, single channel TIFF file specified by filename, within the
+ * area of the image specified by extents.  If an error occurs,
+ * returns NULL. */
+RutSurface *rut_surface_from_tiff_extents (const char *filename,
+                                           RutExtents *extents);
+
 /* Save a surface to a 32-bit floating point, single channel TIFF file
  * specified by filename. Returns non-zero on success. */
 int rut_surface_to_tiff (RutSurface *s, const char *filename);
