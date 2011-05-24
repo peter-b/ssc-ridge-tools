@@ -31,14 +31,14 @@ struct MPMetricsSSInfo {
   float scale;
 };
 
-float
+static float
 metric_Mnorm (float Lpp, float Lqq, float scale)
 {
   /* normalised maximum absolute principal curvature */
   return scale * fmaxf (fabsf (Lpp), fabsf (Lqq));
 }
 
-float
+static float
 metric_Nnorm (float Lpp, float Lqq, float scale)
 {
   /* square of normalised square principal curvature difference */
@@ -47,7 +47,7 @@ metric_Nnorm (float Lpp, float Lqq, float scale)
   return t2*t2 * d*d;
 }
 
-float
+static float
 metric_Anorm (float Lpp, float Lqq, float scale)
 {
   /* square of normalised principal curvature difference */
@@ -156,4 +156,55 @@ MP_metrics_SS (RutSurface *src, float scale, int norm,
   rut_surface_destroy (info->Dyy);
   rut_surface_destroy (info->Dxy);
   free (info);
+}
+
+void
+MP_metrics (RutScaleSpace *src, int norm,
+            RutScaleSpace *Lp, RutScaleSpace *Lpp, RutScaleSpace *RnormL,
+            RutScaleSpace *dRnormL, RutScaleSpace *ddRnormL)
+{
+  assert (src);
+
+  /* Generate metrics in the image plane */
+  for (int i = 0; i < src->n_scales; i++) {
+    RutSurface *ssrc, *sLp = NULL, *sLpp = NULL, *sRnormL = NULL;
+    ssrc = rut_scale_space_get_surface (src, RUT_SCALE_SPACE_SCALE, i);
+    if (Lp)
+      sLp = rut_scale_space_get_surface (Lp, RUT_SCALE_SPACE_SCALE, i);
+    if (Lpp)
+      sLpp = rut_scale_space_get_surface (Lpp, RUT_SCALE_SPACE_SCALE, i);
+    if (RnormL)
+      sRnormL = rut_scale_space_get_surface (RnormL, RUT_SCALE_SPACE_SCALE, i);
+
+    MP_metrics_SS (ssrc, src->scales[i], norm, sLp, sLpp, sRnormL);
+
+    rut_surface_destroy (sLp);
+    rut_surface_destroy (sLpp);
+    rut_surface_destroy (sRnormL);
+  }
+
+  /* Generate inter-scale metrics. */
+  if (!RnormL) return;
+
+  RutFilter *deriv = rut_filter_new_deriv ();
+
+  /* First derivative w.r.t. scale of ridge strength */
+  if (dRnormL) {
+    rut_filter_scale_space_mp (deriv, RnormL, dRnormL, RUT_SCALE_SPACE_SCALE);
+  }
+
+  /* Second derivative w.r.t. scale of ridge strength */
+  if (ddRnormL) {
+    if (dRnormL) { /* If we already calculated first deriv, use it */
+      rut_filter_scale_space_mp (deriv, dRnormL, ddRnormL,
+                                 RUT_SCALE_SPACE_SCALE);
+    } else {
+      rut_filter_scale_space_mp (deriv, RnormL, ddRnormL,
+                                 RUT_SCALE_SPACE_SCALE);
+      rut_filter_scale_space_mp (deriv, ddRnormL, NULL,
+                                 RUT_SCALE_SPACE_SCALE);
+    }
+  }
+
+  rut_filter_destroy (deriv);
 }

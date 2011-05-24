@@ -46,17 +46,13 @@
 /* Enumeration of different ridge strength metrics. See Lindeberg 1998
  * for details. */
 enum {
+  /* Gamma-normalised absolute maximum principal curvature */
   METRICS_MNORM = 1,
+  /* Square of gamma-normalised square principal curvature difference */
   METRICS_NNORM = 2,
+  /* Square of gamma-normalised principal curvature difference */
   METRICS_ANORM = 3,
 };
-
-/* Gamma-normalised absolute maximum principal curvature */
-float metric_Mnorm (float Lpp, float Lqq, float scale);
-/* Square of gamma-normalised square principal curvature difference */
-float metric_Nnorm (float Lpp, float Lqq, float scale);
-/* Square of gamma-normalised principal curvature difference */
-float metric_Anorm (float Lpp, float Lqq, float scale);
 
 /* Calculate single-scale ridge metrics for an image surface at the
  * specified scale, where the ridge strength metric used can be one of
@@ -65,6 +61,17 @@ float metric_Anorm (float Lpp, float Lqq, float scale);
  * as the src surface.*/
 void MP_metrics_SS (RutSurface *src, float scale, int norm,
                     RutSurface *Lp, RutSurface *Lpp, RutSurface *RnormL);
+
+/* Calculate multiscale ridge metrics for a scalespace, where the
+ * ridge strength metric used can be one of METRICS_MNORM,
+ * METRICS_NNORM or METRICS_ANORM. Output is to the scale spaces Lp,
+ * Lpp, RnormL, dRnormL and ddRnormL, which should have the same
+ * dimensions as the src surface.  Any of the outputs are permitted to
+ * be NULL, in which case they are not generated; n.b. that the scale
+ * derivatives of RnormL (dRnormL and ddRnormL) require RnormL. */
+void MP_metrics (RutScaleSpace *src, int norm,
+                 RutScaleSpace *Lp, RutScaleSpace *Lpp, RutScaleSpace *RnormL,
+                 RutScaleSpace *dRnormL, RutScaleSpace *ddRnormL);
 
 /* Structure for storing info on the single-scale ridge points in the
  * square formed by four adjacent pixels. The flags field indicates
