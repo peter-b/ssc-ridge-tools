@@ -124,7 +124,8 @@ rut_filter_conv (RutFilter *f, RutSurface *src, RutSurface *dest,
 
     for (j = - f->ofs; j < (f->len - f->ofs); j++) {
       int src_idx = i - j;
-      if (src_idx < 0 || src_idx >= src->cols) continue;
+      if (UNLIKELY (src_idx < 0)) src_idx = 0;
+      if (UNLIKELY (src_idx >= src->cols)) src_idx = src->cols - 1;
       filtptr = f->data + f->ofs + j;
 
       v += (*filtptr) * RUT_SURFACE_REF (src, 0, src_idx);
