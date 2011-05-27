@@ -238,3 +238,16 @@ rut_scale_space_generate_mp (RutSurface *image, int n_scales,
 
   return result;
 }
+
+void
+rut_scale_space_foreach (RutScaleSpace *s, RutScaleSpaceIterFunc func,
+                         void *user_data)
+{
+  for (int scale = 0; scale < s->n_scales; scale++) {
+    for (int row = 0; row < s->rows; row++) {
+      for (int col = 0; col < s->cols; col++) {
+        func (s, row, col, scale, user_data);
+      }
+    }
+  }
+}

@@ -176,6 +176,15 @@ RutScaleSpace *rut_scale_space_new_view_extents (RutScaleSpace *s,
  * N). */
 RutSurface *rut_scale_space_get_surface (RutScaleSpace *s, int axis, int offset);
 
+typedef void (*RutScaleSpaceIterFunc)(RutScaleSpace *s,
+                                      int row, int col, int scale,
+                                      void *user_data);
+
+/* Call func for each location in a scale space. */
+void
+rut_scale_space_foreach (RutScaleSpace *s, RutScaleSpaceIterFunc func,
+                         void *user_data);
+
 /* -------------------------------------------------------------------------- */
 
 /* A Filter represents an arbitrary single-dimension finite impulse
