@@ -68,7 +68,7 @@ rut_surface_new_view_extents (RutSurface *s, RutExtents *extents)
   assert (extents);
   assert (extents->top >= 0 && extents->top < s->rows);
   assert (extents->left >= 0 && extents->left < s->cols);
-  assert (extents->height > 0 && extents->top + extents->height <= s->cols);
+  assert (extents->height > 0 && extents->top + extents->height <= s->rows);
   assert (extents->width > 0 && extents->left + extents->width <= s->cols);
 
   RutSurface *result = rut_surface_new_view (s);
