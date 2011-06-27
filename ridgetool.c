@@ -35,7 +35,7 @@ enum {
   MODE_LINES,
 };
 
-#define GETOPT_OPTIONS "slpt:m:j:h"
+#define GETOPT_OPTIONS "slpt:m:j:i:h"
 
 static void
 usage (char *name, int status)
@@ -51,6 +51,7 @@ usage (char *name, int status)
 "  -t SCALES       Specify a single scale or a range of scales\n"
 "  -m NORM         Strength metric to use (A, M or N) [default N]\n"
 "  -j THREADS      Number of multiprocessing threads to use [default %i]\n"
+"  -i VALUE        Set non-finite values in input to VALUE [default 0]\n"
 "  -h              Display this message and exit\n"
 "\n"
 "Extracts ridges from INFILE, which should be a single-channel 32-bit\n"
@@ -131,9 +132,10 @@ main (int argc, char **argv)
   RidgePointsSS *ridges = NULL;
   RidgeLinesSS *lines = NULL;
   RutFilter *filt;
-  int c, i;
+  int c, i, j;
   int n_scales = 0;
-  float *scales = NULL;;
+  float *scales = NULL;
+  float nan_default = 0;
   int show_result = 0;
   int status;
   int mode = MODE_SEGMENTS;
@@ -178,6 +180,13 @@ main (int argc, char **argv)
         usage (argv[0], 1);
       }
       break;
+    case 'i':
+      status = sscanf (optarg, "%f", &nan_default);
+      if (status != 1) {
+        fprintf (stderr, "ERROR: Bad argument '%s' to -i option.\n\n",
+                 optarg);
+        usage (argv[0], 1);
+      }
     case 'v':
       show_result = 1;
       break;
@@ -228,6 +237,15 @@ main (int argc, char **argv)
   /* Load image */
   image = rut_surface_from_tiff (filename);
   if (!image) return 2; /* Should have already output a message */
+
+  /* Set non-finite values to default value */
+  for (i = 0; i < image->rows; i++) {
+    for (j = 0; j < image->cols; j++) {
+      if (!isfinite (RUT_SURFACE_REF (image, i, j))) {
+        RUT_SURFACE_REF (image, i, j) = nan_default;
+      }
+    }
+  }
 
   /* Create single-scale metrics for lowest scale requested. */
   filt = rut_filter_new_gaussian (scales[0]);
