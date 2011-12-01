@@ -1,9 +1,10 @@
-bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport
+bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport \
+	ridgebayes
 noinst_PROGRAMS = show-tiff scalespacegen
 noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
 CFLAGS = -g -Wall -pedantic $(GTK_CFLAGS)
-LDFLAGS = -lm -ltiff $(GTK_LIBS)
+LDFLAGS = -lgsl -lgslcblas -lm -ltiff $(GTK_LIBS)
 
 libridgeutil_a_SOURCES = \
 	ridgeutil.h \
@@ -67,6 +68,11 @@ ridgeclassexport_SOURCES = \
 	ridgeclassexport.c
 
 ridgeclassexport_LDADD = libridgeio.a
+
+ridgebayes_SOURCES = \
+	ridgebayes.c
+
+ridgebayes_LDADD = libridgeio.a
 
 EXTRA_DIST = \
 	gui_ridges.c

@@ -7,6 +7,7 @@ ridgetool
 ridgeconv
 ridgeclassexport
 xridgeclass
+ridgebayes
 qr-symmv
 .deps
 Makefile
