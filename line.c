@@ -198,73 +198,97 @@ struct MPRidgeLinesSSInfo
   RidgePointsSS *points;
 };
 
-static void
-adjacent_points (RidgePointsSSEntry *curr,
-                 RidgePointsSSEntry **adj1,
-                 RidgePointsSSEntry **adj2,
-                 int rowstep)
+struct Point
+{
+  unsigned int row, col;
+};
+
+static int
+point_equal (struct Point a, struct Point b)
+{
+  return (a.row == b.row && a.col == b.col);
+}
+
+#define POINT_NULL ((struct Point) {-1, -1})
+
+static int
+adjacent_points (RidgePointsSS *p,
+                 struct Point curr,
+                 struct Point *adj1,
+                 struct Point *adj2)
 {
   int found = 0;
-  RidgePointsSSEntry *adj[2] = {NULL, NULL};
+  struct Point adj[2] = {curr, curr};
+  unsigned char cflags;
   unsigned char nflags;
 
-  assert (curr);
+  assert (p);
   assert (adj1);
   assert (adj2);
 
-  /* Don't bother with invalid points. */
-  if (count_bits_set (curr->flags) != 2) {
-    *adj1 = NULL;
-    *adj2 = NULL;
-    return;
+  assert ((curr.row >= 0) && (curr.row < p->rows));
+  assert ((curr.col >= 0) && (curr.col < p->cols));
+
+  cflags = RIDGE_POINTS_SS_PTR (p, curr.row, curr.col)->flags;
+
+  if (count_bits_set (cflags) == 2) {
+    if (cflags & EDGE_FLAG_NORTH && curr.row > 0) {
+      nflags = RIDGE_POINTS_SS_PTR (p, curr.row - 1, curr.col)->flags;
+      if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_SOUTH) {
+        adj[found++].row--;
+      }
+    }
+
+    if (cflags & EDGE_FLAG_SOUTH && curr.row + 1 < p->rows) {
+      nflags = RIDGE_POINTS_SS_PTR (p, curr.row + 1, curr.col)->flags;
+      if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_NORTH) {
+        adj[found++].row++;
+      }
+    }
+
+    if (cflags & EDGE_FLAG_WEST && curr.col > 0) {
+      nflags = RIDGE_POINTS_SS_PTR (p, curr.row, curr.col - 1)->flags;
+      if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_EAST) {
+        adj[found++].col--;
+      }
+    }
+
+    if (cflags & EDGE_FLAG_EAST && curr.col + 1 < p->cols) {
+      nflags = RIDGE_POINTS_SS_PTR (p, curr.row, curr.col + 1)->flags;
+      if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_WEST) {
+        adj[found++].col++;
+      }
+    }
   }
 
-  if (curr->flags & EDGE_FLAG_NORTH) {
-    nflags = (curr - rowstep)->flags;
-    if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_SOUTH)
-      adj[found++] = curr - rowstep;
-  }
-
-  if (curr->flags & EDGE_FLAG_SOUTH) {
-    nflags = (curr + rowstep)->flags;
-    if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_NORTH)
-      adj[found++] = curr + rowstep;
-  }
-
-  if (curr->flags & EDGE_FLAG_WEST) {
-    nflags = (curr - 1)->flags;
-    if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_EAST)
-      adj[found++] = curr - 1;
-  }
-
-  if (curr->flags & EDGE_FLAG_EAST) {
-    nflags = (curr + 1)->flags;
-    if (count_bits_set (nflags) == 2  && nflags & EDGE_FLAG_WEST)
-      adj[found++] = curr + 1;
+  for (int i = found; i < 2; i++) {
+    adj[i] = POINT_NULL;
   }
 
   *adj1 = adj[0];
   *adj2 = adj[1];
-  return;
+
+  return found;
 }
 
-static RidgePointsSSEntry *
-walk_points (RidgePointsSSEntry *curr,
-             RidgePointsSSEntry *prev,
-             int rowstep)
+static struct Point
+walk_points (RidgePointsSS *p,
+             struct Point curr,
+             struct Point prev)
 {
-  RidgePointsSSEntry *adj[2] = {NULL, NULL};
+  struct Point adj[2] = {POINT_NULL, POINT_NULL};
 
-  assert (curr);
+  assert (p);
 
-  adjacent_points (curr, &adj[0], &adj[1], rowstep);
+  adjacent_points (p, curr, &adj[0], &adj[1]);
 
   for (int i = 0; i < 2; i++) {
-    if (adj[i] != prev)
+    if (!point_equal (adj[i], prev)) {
       return adj[i];
+    }
   }
-  assert (0); /* If we get here, something's gone seriously wrong. */
-  return NULL; /* Shouldn't ever be reached! */
+  abort (); /* If we get here, something's gone seriously wrong. */
+  return POINT_NULL; /* Shouldn't ever be reached! */
 }
 
 /* Line-building, first pass.  Associate each ridge segment in the
@@ -341,11 +365,14 @@ MP_ridge_lines_SS_build2_func (int thread_num, int thread_count, void *user_data
 
   for (row = first_row; row < first_row + num_rows; row++) {
     for (col = 0; col < l->cols; col++) {
-      RidgePointsSSEntry *rootp = RIDGE_POINTS_SS_PTR (p, row, col);
+      struct Point rootp = {row, col};
       RidgeLinesSSEntry *root = RIDGE_LINES_SS_PTR (l, row, col);
 
-      RidgePointsSSEntry *neighbours[2], *startp;
-      RidgePointsSSEntry *currp = NULL, *prevp = NULL, *nextp = NULL;
+      int n_neighbours;
+      struct Point neighbours[2], startp;
+      struct Point currp = POINT_NULL;
+      struct Point prevp = POINT_NULL;
+      struct Point nextp = POINT_NULL;
 
       assert (l->cols == p->cols);
 
@@ -353,26 +380,31 @@ MP_ridge_lines_SS_build2_func (int thread_num, int thread_count, void *user_data
       if (set_parent (root) != root) continue;
 
       /* Find line neighbours of the root node */
-      adjacent_points (rootp, &neighbours[0], &neighbours[1], p->cols);
+      n_neighbours = adjacent_points (p, rootp, &neighbours[0], &neighbours[1]);
 
       /* No neighbours, so quit straight away */
-      if (neighbours[0] == NULL) {
+      if (!n_neighbours) {
         list_prev (root) = NULL;
         list_next (root) = NULL;
         continue;
       }
 
-      /* Walk to find an end of the list */
+      /* Walk to find an end of the list. We now know this line contains
+       * at least 2 ridge segments. */
       prevp = rootp;
       currp = neighbours[0];
       while (1) {
-        nextp = walk_points (currp, prevp, p->cols);
+        nextp = walk_points (p, currp, prevp);
 
         /* Have we got a loop? */
-        if (nextp == rootp) break;
+        if (point_equal (nextp, rootp)) {
+          break;
+        }
 
         /* Have we found an end? */
-        if (nextp == NULL) break;
+        if (point_equal (nextp, POINT_NULL)) {
+          break;
+        }
 
         prevp = currp;
         currp = nextp;
@@ -380,25 +412,38 @@ MP_ridge_lines_SS_build2_func (int thread_num, int thread_count, void *user_data
       startp = currp;
 
       /* Now actually build the list */
-      prevp = NULL;
+      prevp = POINT_NULL;
       while (1) {
-        nextp = walk_points (currp, prevp, p->cols);
+        nextp = walk_points (p, currp, prevp);
 
         /* Have we got a loop? */
-        if (nextp == startp) {
-          nextp = NULL;
+        if (point_equal (nextp, startp)) {
+          nextp = POINT_NULL;
         }
 
-        /* FIXME VERY EVIL ASSUMPTIONS */
-        RidgeLinesSSEntry *curr = root + (currp - rootp);
-        RidgeLinesSSEntry *next = nextp ? root + (nextp - rootp) : NULL;
-        RidgeLinesSSEntry *prev = prevp ? root + (prevp - rootp) : NULL;
+        RidgeLinesSSEntry *curr = RIDGE_LINES_SS_PTR (l, currp.row, currp.col);
+        RidgeLinesSSEntry *next, *prev;
+        if (point_equal (nextp, POINT_NULL)) {
+          next = NULL;
+        } else {
+          next = RIDGE_LINES_SS_PTR (l, nextp.row, nextp.col);
+        }
+        if (point_equal (prevp, POINT_NULL)) {
+          prev = NULL;
+        } else {
+          prev = RIDGE_LINES_SS_PTR (l, prevp.row, prevp.col);
+        }
+
+        assert (curr != next);
+        assert (curr != prev);
 
         list_next (curr) = next;
         list_prev (curr) = prev;
 
         /* Have we found an end? */
-        if (nextp == NULL) break;
+        if (next == NULL) {
+          break;
+        }
 
         prevp = currp;
         currp = nextp;
@@ -414,7 +459,9 @@ MP_ridge_lines_SS_build (RidgeLinesSS *lines, RidgePointsSS *points)
   info.lines = lines;
   info.points = points;
 
+  debug_printf ("Line pass #1: building sets\n");
   rut_multiproc_task (MP_ridge_lines_SS_build1_func, (void *) (&info));
+  debug_printf ("Line pass #2: building lists\n");
   rut_multiproc_task (MP_ridge_lines_SS_build2_func, (void *) (&info));
 }
 

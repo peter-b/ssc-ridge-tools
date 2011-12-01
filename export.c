@@ -282,6 +282,9 @@ export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
         prev_row = row; prev_col = col;
 
         lnext = ridge_lines_SS_entry_next (lentry);
+
+        assert (lnext != lentry);
+
         RidgePointsSSEntry *pnext = NULL;
         if (lnext) {
           ridge_lines_SS_entry_get_position (lines, lnext, &row, &col);
