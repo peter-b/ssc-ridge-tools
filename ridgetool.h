@@ -240,4 +240,7 @@ LINTERP (float d, float x, float y)
   return (1-d)*x + d*y;
 }
 
+void debug_printf (char *format, ...)
+  __attribute__ ((format (printf, 1, 2)));
+
 #endif /* !__RIDGETOOL_H__ */

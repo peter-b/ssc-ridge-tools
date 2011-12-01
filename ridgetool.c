@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
@@ -35,7 +36,9 @@ enum {
   MODE_LINES,
 };
 
-#define GETOPT_OPTIONS "slpt:m:j:i:h"
+#define GETOPT_OPTIONS "slpt:m:j:i:vh"
+
+int verbose_mode;
 
 static void
 usage (char *name, int status)
@@ -136,10 +139,12 @@ main (int argc, char **argv)
   int n_scales = 0;
   float *scales = NULL;
   float nan_default = 0;
-  int show_result = 0;
   int status;
   int mode = MODE_SEGMENTS;
   int metric = METRICS_NNORM;
+
+  /* Quiet by default */
+  verbose_mode = 0;
 
   /* Parse command-line arguments */
   while ((c = getopt (argc, argv, GETOPT_OPTIONS)) != -1) {
@@ -188,7 +193,7 @@ main (int argc, char **argv)
         usage (argv[0], 1);
       }
     case 'v':
-      show_result = 1;
+      verbose_mode = 1;
       break;
     case 'h':
       usage (argv[0], 0);
@@ -235,10 +240,12 @@ main (int argc, char **argv)
   n_scales -= (c-i-1);
 
   /* Load image */
+  debug_printf ("Loading image from %s.\n", filename);
   image = rut_surface_from_tiff (filename);
   if (!image) return 2; /* Should have already output a message */
 
   /* Set non-finite values to default value */
+  debug_printf ("Setting non-finite values to %f.\n", nan_default);
   for (i = 0; i < image->rows; i++) {
     for (j = 0; j < image->cols; j++) {
       if (!isfinite (RUT_SURFACE_REF (image, i, j))) {
@@ -248,6 +255,7 @@ main (int argc, char **argv)
   }
 
   /* Create single-scale metrics for lowest scale requested. */
+  debug_printf ("Filtering to scale %f\n", scales[0]);
   filt = rut_filter_new_gaussian (scales[0]);
   if (filt) {
     rut_filter_surface_mp (filt, image, image,
@@ -255,6 +263,7 @@ main (int argc, char **argv)
     rut_filter_destroy (filt);
   }
 
+  debug_printf ("Calculating metrics\n");
   Lp = rut_surface_new_like (image);
   Lpp = rut_surface_new_like (image);
   RnormL = rut_surface_new_like (image);
@@ -264,6 +273,7 @@ main (int argc, char **argv)
   rut_surface_destroy (image);
 
   /* Find ridge points */
+  debug_printf ("Finding ridge points\n");
   ridges = ridge_points_SS_new_for_surface (RnormL);
   MP_ridge_points_SS (ridges, Lp, Lpp);
 
@@ -272,15 +282,18 @@ main (int argc, char **argv)
 
   if (mode == MODE_LINES) {
     /* Find ridge lines */
+    debug_printf ("Building lines\n");
     lines = ridge_lines_SS_new_for_surface (RnormL);
     MP_ridge_lines_SS_build (lines, ridges);
   }
 
   /* Re-load image */
+  debug_printf ("Re-loading image from %s.\n", filename);
   image = rut_surface_from_tiff (filename);
 
   /* Generate output */
   if (out_filename) {
+    debug_printf ("Generating output to %s.\n", out_filename);
     switch (mode) {
     case MODE_POINTS:
       status = export_points (ridges, image, RnormL, out_filename);
@@ -309,4 +322,13 @@ main (int argc, char **argv)
   ridge_lines_SS_destroy (lines);
 
   return 0;
+}
+
+void
+debug_printf (char *format, ...)
+{
+  va_list ap;
+  va_start (ap, format);
+  if (verbose_mode) vfprintf (stderr, format, ap);
+  va_end (ap);
 }
