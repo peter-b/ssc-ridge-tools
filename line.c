@@ -297,10 +297,11 @@ MP_ridge_lines_SS_build1_func (int thread_num, int thread_count, void *user_data
        *
        * We never need to check to the west; either it's the location
        * we just visited, or it doesn't exist.  We only need to check
-       * to the north if this is the first row of our sector. */
+       * to the north if this is the first row of our sector but not
+       * the first row of the image.. */
 
       /* North */
-      if (row == first_row && flags & EDGE_FLAG_NORTH) {
+      if (first_row > 0 && row == first_row && flags & EDGE_FLAG_NORTH) {
         nflags = (s - p->cols)->flags;
         if (count_bits_set (nflags) == 2 && nflags & EDGE_FLAG_SOUTH)
           set_union (x, x - l->cols);
