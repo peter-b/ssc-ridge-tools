@@ -71,10 +71,10 @@ __sync_bool_compare_and_swap_16 (__int128_t *ptr,
      );
 
   if (!result) {
-    fprintf (stderr,
-             "%s: failed (ptr = %p, oldval = [%lx, %lx], newval = [%lx, %lx])\n",
-             __FUNCTION__, (void *)ptr,
-             old.s.l, old.s.h, new.s.l, new.s.h);
+    debug_printf ("%s: failed (ptr = %p, oldval = [%lx, %lx], "
+                  "newval = [%lx, %lx])\n",
+                  __FUNCTION__, (void *)ptr,
+                  old.s.l, old.s.h, new.s.l, new.s.h);
   }
 
   return result;
