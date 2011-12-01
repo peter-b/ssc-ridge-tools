@@ -5,11 +5,14 @@
 show-tiff
 ridgetool
 ridgeconv
+ridgecull
 ridgeclassexport
 xridgeclass
 ridgebayes
 qr-symmv
+scalespacegen
 .deps
+build-tools
 Makefile
 aclocal.m4
 autom4te.cache
