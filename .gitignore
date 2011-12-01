@@ -5,9 +5,10 @@
 show-tiff
 ridgetool
 ridgeconv
+ridgeclassexport
+xridgeclass
 qr-symmv
 .deps
-
 Makefile
 aclocal.m4
 autom4te.cache

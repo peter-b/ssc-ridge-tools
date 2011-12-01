@@ -1,4 +1,4 @@
-bin_PROGRAMS = ridgetool ridgeconv ridgecull
+bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport
 noinst_PROGRAMS = show-tiff scalespacegen
 noinst_LIBRARIES = libridgeutil.a libridgeio.a
 
@@ -57,6 +57,16 @@ scalespacegen_SOURCES = \
 	scalespacegen.c
 
 scalespacegen_LDADD = libridgeutil.a
+
+xridgeclass_SOURCES = \
+	xridgeclass.c
+
+xridgeclass_LDADD = libridgeutil.a libridgeio.a
+
+ridgeclassexport_SOURCES = \
+	ridgeclassexport.c
+
+ridgeclassexport_LDADD = libridgeio.a
 
 EXTRA_DIST = \
 	gui_ridges.c
