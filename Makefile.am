@@ -41,6 +41,10 @@ ridgeconv_SOURCES = \
 	conv_mask.c \
 	conv_svg.c
 
+ridgeconv_CFLAGS = $(CAIRO_CFLAGS) $(CAIRO_PNG_CFLAGS) \
+	$(CAIRO_PDF_CFLAGS) $(CAIRO_SVG_CFLAGS)
+ridgeconv_LDFLAGS = $(CAIRO_LIBS) $(CAIRO_PNG_LIBS) \
+	$(CAIRO_PDF_LIBS) $(CAIRO_SVG_LIBS)
 ridgeconv_LDADD = libridgeutil.a libridgeio.a
 
 ridgecull_SOURCES = \
