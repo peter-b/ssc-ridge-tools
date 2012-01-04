@@ -19,19 +19,25 @@ AC_PROG_RANLIB
 PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
-PKG_CHECK_MODULES([CAIRO], [cairo >= 1.10], ,
-  AC_MSG_ERROR([Cairo 1.10.0 or later is required.]))
-PKG_CHECK_MODULES([CAIRO_PNG], [cairo-png >= 1.10], ,
-  AC_MSG_ERROR([Cairo PNG support 1.10.0 or later is required.]))
-PKG_CHECK_MODULES([CAIRO_PDF], [cairo-pdf >= 1.10], ,
-  AC_MSG_ERROR([Cairo PDF support 1.10.0 or later is required.]))
-PKG_CHECK_MODULES([CAIRO_SVG], [cairo-svg >= 1.10], ,
-  AC_MSG_ERROR([Cairo SVG support 1.10.0 or later is required.]))
+PKG_CHECK_MODULES([CAIRO], [cairo >= 1.10], [CAIRO=yes], [CAIRO=no])
+if test "$CAIRO" = "yes"; then
+  PKG_CHECK_MODULES([CAIRO_PNG], [cairo-png >= 1.10], ,
+    AC_MSG_ERROR([Cairo PNG support 1.10.0 or later is required.]))
+  PKG_CHECK_MODULES([CAIRO_PDF], [cairo-pdf >= 1.10], ,
+    AC_MSG_ERROR([Cairo PDF support 1.10.0 or later is required.]))
+  PKG_CHECK_MODULES([CAIRO_SVG], [cairo-svg >= 1.10], ,
+    AC_MSG_ERROR([Cairo SVG support 1.10.0 or later is required.]))
+else
+  PKG_CHECK_MODULES([CAIRO], [cairo >= 1.8], [],
+    AC_MSG_ERROR([Cairo 1.8.0 or later is required.]))
+fi
 
 PKG_CHECK_MODULES([GTK], [gtk+-2.0 >= 2.10.0], ,
   AC_MSG_ERROR([GTK+ 2.10.0 or later is required.]))
-PKG_CHECK_MODULES([GSL], [gsl >= 1.15], ,
-  AC_MSG_ERROR([GNU Scientific Library 1.15.0 or later is required.]))
+
+PKG_CHECK_MODULES([GSL], [gsl >= 1.13], [],
+  AC_MSG_ERROR([GNU Scientific Library 1.13.0 or later is required.]))
+
 AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([tiff], [TIFFOpen])
 
