@@ -205,6 +205,23 @@ export_segments (RidgePointsSS *ridges, RutSurface *image,
   return 0;
 }
 
+static int
+export_line_points (RidgePointsSS *ridges, RutSurface *image,
+                    RutSurface *RnormL, int row, int col,
+                    int edge_flags, FILE *fp)
+{
+  int n = 0;
+  for (int i = 0; i < 4; i++) {
+    int edge = (1 << i);
+    if (!(edge_flags & edge)) continue;
+    if (!export_point (ridges, image, RnormL, row, col, edge, fp)) {
+      return 0;
+    }
+    n++;
+  }
+  return n; /* Return number of points exported. */
+}
+
 int
 export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
               RutSurface *image, RutSurface *RnormL, const char *filename)
@@ -244,11 +261,23 @@ export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
       RidgeLinesSSEntry *lprev = NULL, *lnext = NULL;
       int row = i, col = j;
       int prev_row = -1, prev_col = -1;
+      int next_row = -1, next_col = -1;
       while (lentry != NULL) {
         int edge_to_prev = 0;
+        int edge_to_next = 0;
 
-        /* Work out direction towards previous point, if this isn't
-         * the first point. */
+        lnext = ridge_lines_SS_entry_next (lentry);
+        assert (lnext != lentry);
+
+        RidgePointsSSEntry *pnext = NULL;
+        if (lnext) {
+          ridge_lines_SS_entry_get_position (lines, lnext, &next_row, &next_col);
+          pnext = RIDGE_POINTS_SS_PTR (ridges, next_row, next_col);
+          assert (count_bits_set (pnext->flags) == 2);
+        }
+
+        /* Work out direction towards previous segment, if this isn't
+         * the first segment. */
         if (lprev) {
           if (prev_row == row) {
             if (prev_col - col > 0) {
@@ -263,37 +292,56 @@ export_lines (RidgeLinesSS *lines, RidgePointsSS *ridges,
               edge_to_prev = EDGE_FLAG_NORTH;
             }
           }
-        }
 
-        /* FIXME: assumes lots about the flag structure */
-        for (int i = 0; i < 4; i++) {
-          int edge = (1 << i);
-          /* Skip the edge pointing towards the previous edge */
-          if (edge_to_prev == edge) continue;
-          if (!(pentry->flags & edge)) continue;
-          if (!export_point (ridges, image, RnormL,
-                             row, col, pentry->flags & edge, fp))
-            goto export_fail;
+          /* Output point *not* pointing towards previous segment. */
+          int n = export_line_points (ridges, image, RnormL, row, col,
+                                      pentry->flags & ~edge_to_prev, fp);
+          if (n != 1) goto export_fail;
           num_points++;
+
+        } else if (lnext) {
+          /* If this is the first segment, work out direction towards
+           * next segment. We need this to figure out which point to
+           * output first. */
+          if (next_row == row) {
+            if (next_col - col > 0) {
+              edge_to_next = EDGE_FLAG_EAST;
+            } else {
+              edge_to_next = EDGE_FLAG_WEST;
+            }
+          } else {
+            if (next_row - row > 0) {
+              edge_to_next = EDGE_FLAG_SOUTH;
+            } else {
+              edge_to_next = EDGE_FLAG_NORTH;
+            }
+          }
+
+          /* Output point away from next segment first, then point
+           * towards next segment. */
+          int n = 0;
+          n += export_line_points (ridges, image, RnormL, row, col,
+                                   pentry->flags & ~edge_to_next, fp);
+          n += export_line_points (ridges, image, RnormL, row, col,
+                                   pentry->flags & edge_to_next, fp);
+          if (n != 2) goto export_fail;
+          num_points += 2;
+
+        } else {
+          /* Isolated segment; output points in any order. */
+          int n = export_line_points (ridges, image, RnormL, row, col,
+                                      pentry->flags, fp);
+          if (n != 2) goto export_fail;
+          num_points += 2;
         }
 
         /* Find next point in line & interate */
         lprev = lentry;
         prev_row = row; prev_col = col;
 
-        lnext = ridge_lines_SS_entry_next (lentry);
-
-        assert (lnext != lentry);
-
-        RidgePointsSSEntry *pnext = NULL;
-        if (lnext) {
-          ridge_lines_SS_entry_get_position (lines, lnext, &row, &col);
-          pnext = RIDGE_POINTS_SS_PTR (ridges, row, col);
-          assert (count_bits_set (pnext->flags) == 2);
-        }
-
         lentry = lnext;
         pentry = pnext;
+        row = next_row; col = next_col;
       }
 
       /* Rewind the file and write in the number of points in the line. */
