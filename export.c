@@ -1,6 +1,6 @@
 /*
  * Surrey Space Centre ridge tools for SAR data processing
- * Copyright (C) 2011  Peter Brett <p.brett@surrey.ac.uk>
+ * Copyright (C) 2011-2012  Peter Brett <p.brett@surrey.ac.uk>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
