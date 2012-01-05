@@ -10,12 +10,12 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign])
+LT_INIT
 
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
-AC_PROG_RANLIB
 PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
@@ -70,5 +70,5 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset munmap strchr strdup strerror])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile] [libridgetool.pc])
 AC_OUTPUT

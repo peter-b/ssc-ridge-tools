@@ -1,20 +1,23 @@
 bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport \
 	ridgebayes
 noinst_PROGRAMS = show-tiff scalespacegen
-noinst_LIBRARIES = libridgeutil.a libridgeio.a
+lib_LTLIBRARIES = libridgetool.la
+include_HEADERS = ridgeutil.h ridgeio.h
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libridgetool.pc
 
-CFLAGS = -g -Wall -pedantic $(GTK_CFLAGS)
-LDFLAGS = -lgsl -lgslcblas -lm -ltiff $(GTK_LIBS)
+CFLAGS = -g -Wall -pedantic $(GSL_CFLAGS) $(GTK_CFLAGS)
+LDFLAGS = -lm -ltiff $(GSL_LIBS) $(GTK_LIBS)
+LDADD = libridgetool.la
 
-libridgeutil_a_SOURCES = \
+libridgetool_la_LDFLAGS = -version-info 0.0.0
+libridgetool_la_SOURCES = \
 	ridgeutil.h \
 	ridgeutil_filter.c \
 	ridgeutil_scalespace.c \
 	ridgeutil_surface.c \
 	ridgeutil_tiffio.c \
-	ridgeutil_multiproc.c
-
-libridgeio_a_SOURCES = \
+	ridgeutil_multiproc.c \
 	ridgeio.h \
 	ridgeio_array.c \
 	ridgeio_data.c \
@@ -32,8 +35,6 @@ ridgetool_SOURCES = \
 	metrics.c \
 	ridges.c
 
-ridgetool_LDADD = libridgeutil.a libridgeio.a
-
 ridgeconv_SOURCES = \
 	ridgeconv.h \
 	ridgeconv.c \
@@ -45,38 +46,31 @@ ridgeconv_CFLAGS = $(CAIRO_CFLAGS) $(CAIRO_PNG_CFLAGS) \
 	$(CAIRO_PDF_CFLAGS) $(CAIRO_SVG_CFLAGS)
 ridgeconv_LDFLAGS = $(CAIRO_LIBS) $(CAIRO_PNG_LIBS) \
 	$(CAIRO_PDF_LIBS) $(CAIRO_SVG_LIBS)
-ridgeconv_LDADD = libridgeutil.a libridgeio.a
 
 ridgecull_SOURCES = \
 	ridgecull.c
-
-ridgecull_LDADD = libridgeio.a
 
 show_tiff_SOURCES = \
 	show-tiff.c \
 	gui_surface.c
 
-show_tiff_LDADD = libridgeutil.a
-
 scalespacegen_SOURCES = \
 	scalespacegen.c
-
-scalespacegen_LDADD = libridgeutil.a
 
 xridgeclass_SOURCES = \
 	xridgeclass.c
 
-xridgeclass_LDADD = libridgeutil.a libridgeio.a
-
 ridgeclassexport_SOURCES = \
 	ridgeclassexport.c
-
-ridgeclassexport_LDADD = libridgeio.a
 
 ridgebayes_SOURCES = \
 	ridgebayes.c
 
-ridgebayes_LDADD = libridgeio.a
-
 EXTRA_DIST = \
 	gui_ridges.c
+
+ACLOCAL_AMFLAGS = -I m4
+libtool: $(LIBTOOL_DEPS)
+	$(SHELL) ./config.status libtool
+
+DISTCLEANFILES = libridgetool.pc

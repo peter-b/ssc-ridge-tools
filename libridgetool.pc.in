@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: ridgetool
+Description: SSC Ridge Tools
+Requires:
+Requires.private:
+Version: 0.1
+Libs: -L${libdir} -lridgetool -ltiff -lm
+Libs.private:
+Cflags: -I${includedir}
