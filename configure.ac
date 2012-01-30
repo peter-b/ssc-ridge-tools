@@ -9,7 +9,8 @@ AC_CONFIG_AUX_DIR([build-tools])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign silent-rules])
+AM_SILENT_RULES
 LT_INIT
 
 # Checks for programs.
