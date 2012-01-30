@@ -1,6 +1,5 @@
 bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport \
 	ridgebayes
-noinst_PROGRAMS = scalespacegen
 lib_LTLIBRARIES = libridgetool.la
 include_HEADERS = ridgeutil.h ridgeio.h
 pkgconfigdir = $(libdir)/pkgconfig
@@ -49,9 +48,6 @@ ridgeconv_LDFLAGS = $(CAIRO_LIBS) $(CAIRO_PNG_LIBS) \
 
 ridgecull_SOURCES = \
 	ridgecull.c
-
-scalespacegen_SOURCES = \
-	scalespacegen.c
 
 xridgeclass_SOURCES = \
 	xridgeclass.c
