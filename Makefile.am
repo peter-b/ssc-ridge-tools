@@ -8,7 +8,7 @@ CFLAGS = -g -Wall -pedantic $(GSL_CFLAGS) $(GTK_CFLAGS)
 LDFLAGS = -lm -ltiff $(GSL_LIBS) $(GTK_LIBS)
 LDADD = libridgetool.la
 
-libridgetool_la_LDFLAGS = -version-info 0.0.0
+libridgetool_la_LDFLAGS = -version-info 0:0:0
 libridgetool_la_SOURCES = \
 	ridgeutil.h \
 	ridgeutil_filter.c \
