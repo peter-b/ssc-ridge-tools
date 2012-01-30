@@ -1,5 +1,4 @@
-bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport \
-	ridgebayes
+bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport
 lib_LTLIBRARIES = libridgetool.la
 include_HEADERS = ridgeutil.h ridgeio.h
 pkgconfigdir = $(libdir)/pkgconfig
@@ -54,9 +53,6 @@ xridgeclass_SOURCES = \
 
 ridgeclassexport_SOURCES = \
 	ridgeclassexport.c
-
-ridgebayes_SOURCES = \
-	ridgebayes.c
 
 ACLOCAL_AMFLAGS = -I m4
 libtool: $(LIBTOOL_DEPS)
