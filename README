@@ -1,0 +1,146 @@
+=========================================================
+ Surrey Space Centre ridge tools for SAR data processing
+=========================================================
+
+Copyright (C) 2010-2012 Peter Brett <p.brett@surrey.ac.uk>
+
+Introduction
+============
+
+This package provides several tools for working with curvilinear
+features extracted from images using ridge detection, as part of
+research into detection of earthquake damage in urban areas.  It was
+developed at Surrey Space Centre at the University of Surrey in
+Guildford, UK.
+
+The curvilinear feature detector used is a single-scale variant of the
+Lindeberg scale-space ridge detector.
+
+For more information, please see:
+
+  P.T.B. Brett and R. Guida. "Bright line detection in COSMO-SkyMed
+  SAR images of urban areas." In Joint Urban Remote Sensing Event 2011
+  (JURSE 2011), pages 253-256, 11-13 April 2011.
+  <http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=5764767&tag=1>
+
+Programs and librarys
+=====================
+
+All tools in the 'ssc-ridge-tools' package support an '-h' option to
+display usage information.
+
+ - 'ridgetool' detects ridges in a single-channel 32-bit floating
+   point TIFF file, and can extract either ridge points, segments or
+   full curvilinear features.
+
+ - 'ridgeconv' converts ridge data to other formats, and supports CSV,
+   PNG, TIFF, PDF, and SVG output.
+
+ - 'ridgecull' removes ridges from a ridge data file, based on
+   threshold values of brightness, length or ridge strength.
+
+ - 'xridgeclass' is a graphical tool for manual 2-class classification
+   of ridge data.
+
+ - 'ridgeclassexport' exports classified ridge data into per-class
+   data files.
+
+The 'libridgetool' library provides two APIs:
+
+ - loading and saving ridge data to an efficient binary file format;
+ - surface and scale space data types that support multiprocessing.
+
+For more information, see the 'ridgeutil.h' and 'ridgeio.h' header files.
+
+Installation
+============
+
+The 'ssc-ridge-tools' package can currently only be compiled on:
+
+ - 32-bit architectures that support atomic compare-and-swap
+   operations (e.g. recent x86 systems)
+ - 64-bit architectures that support the 'CMPXCHG16B' processor
+   instruction.
+
+It also requires the 'mmap()' system call to support the 'MAP_SHARED'
+and 'MAP_ANONYMOUS' flags.  Most recent versions of Linux provide
+this.
+
+Dependencies
+------------
+
+In order to compile and install the 'ssc-ridge-tools' package, you must
+have the following tools and libraries installed:
+
+ - A C compiler and standard library (GCC/glibc are recommended).
+
+ - The `pkg-config' tool for managing shared libraries.
+   <http://pkgconfig.freedesktop.org/>
+
+ - GTK+ (the Gimp Toolkit), version  2.10.0 or later.
+   <http://www.gtk.org/>
+
+ - Cairo vector graphics library, version 1.8.0 or later, with PNG,
+   PDF and SVG support available.
+   <http://www.cairographics.org/>
+
+ - GSL (the GNU Scientific Library), version 1.13 or later.
+   <http://wwww.gnu.org/s/gsl/>
+
+ - LibTIFF.
+   <http://www.libtiff.org/>
+
+If you are compiling from the 'ssc-ridge-tools' git repository, you
+will also require:
+
+  - The `git' version control tool, version 1.6 or newer.
+    <http://git-scm.com/>
+
+  - GNU Automake, version 1.11.0 or newer.
+    <http://www.gnu.org/software/automake/>
+
+  - GNU Autoconf, version 2.60 or newer.
+    <http://www.gnu.org/software/autoconf/>
+
+  - GNU Libtool.  <http://www.gnu.org/software/libtool/>
+
+Configuration and compilation
+-----------------------------
+
+If you are building from git, clone the repository and set up the
+source tree:
+
+  git clone git://github.com/peter-b/ssc-ridge-tools.git
+  cd ssc-ridge-tools
+  ./autogen.sh
+
+Otherwise, extract the source files.
+
+You can then proceed to configure, compile and install the tools in
+the usual manner:
+
+  ./configure
+  make
+  make install
+
+For a full list of the options that can be passed to 'configure',
+please see:
+
+  ./configure --help
+
+License
+=======
+
+Surrey Space Centre ridge tools for SAR data processing (this package)
+is freely distributable under the GNU Public License (GPL) version 3.0
+or (at your option) any later version.  See the 'COPYING' file for the
+full text of the license.
+
+The programs and associated files are:
+
+  Copyright (C) 2010-2012 Peter Brett <p.brett@surrey.ac.uk>
+
+..
+  Local Variables:
+  mode: text
+  End:
