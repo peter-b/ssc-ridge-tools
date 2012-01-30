@@ -1,3 +1,0 @@
-#!/bin/sh
-/usr/bin/env LTDL_LIBRARY_PATH=libguile-tiffio \
-    guile -L ./scm -l ./scm/boot.scm "$@"

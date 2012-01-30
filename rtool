@@ -1,2 +1,0 @@
-#!/bin/sh
-PYTHONPATH=./python:./python/3rdparty python python/rtool.py "$@"

@@ -58,9 +58,6 @@ ridgeclassexport_SOURCES = \
 ridgebayes_SOURCES = \
 	ridgebayes.c
 
-EXTRA_DIST = \
-	gui_ridges.c
-
 ACLOCAL_AMFLAGS = -I m4
 libtool: $(LIBTOOL_DEPS)
 	$(SHELL) ./config.status libtool
