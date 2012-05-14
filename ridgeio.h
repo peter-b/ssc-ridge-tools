@@ -233,6 +233,8 @@ enum {
   RIO_KEY_IMAGE_COLS = 0x11,
   /* Entry classification data (array of 8-bit unsigned) */
   RIO_KEY_IMAGE_CLASSIFICATION = 0x80,
+  /* Entry classification likelihoods (array of 32-bit floating point) */
+  RIO_KEY_IMAGE_CLASS_LIKELIHOOD = 0x81,
 };
 
 /* Get the value associated with a metadata key for data. val_size is
