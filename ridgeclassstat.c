@@ -98,8 +98,8 @@ print_basic_stats (const uint8_t *classification, size_t N)
     B += (classification[i] != 0);
   }
 
-  printf ("Class A: %zi / %zi (%.2f)\n", A, N, 100.0*A/N);
-  printf ("Class B: %zi / %zi (%.2f)\n", B, N, 100.0*B/N);
+  printf ("Class A: %zi / %zi (%.2f%%)\n", A, N, 100.0*A/N);
+  printf ("Class B: %zi / %zi (%.2f%%)\n", B, N, 100.0*B/N);
 }
 
 static void
@@ -112,8 +112,8 @@ print_diff_stats (const uint8_t *classification,
     BA += (classification[i] == 0 && reference[i] != 0);
   }
 
-  printf ("Error A->B: %zi / %zi (%.2f)\n", AB, N, 100.0*AB/N);
-  printf ("Error B->A: %zi / %zi (%.2f)\n", BA, N, 100.0*BA/N);
+  printf ("Error A->B: %zi / %zi (%.2f%%)\n", AB, N, 100.0*AB/N);
+  printf ("Error B->A: %zi / %zi (%.2f%%)\n", BA, N, 100.0*BA/N);
 }
 
 int main (int argc, char **argv)
