@@ -24,39 +24,55 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include <ridgeio.h>
 
-#define GETOPT_OPTIONS "h"
+#define GETOPT_OPTIONS "sdh"
+
+enum {
+  MODE_SUMMARY,
+  MODE_DUMP,
+};
+
+typedef struct _ClassificationData ClassificationData;
+
+struct _ClassificationData {
+  size_t num_entries;
+  uint8_t *classification;
+  float *likelihood;
+};
 
 static void
 usage (char *name, int status)
 {
   printf (
-"Usage: %s FILE [FILE ...]\n"
+"Usage: %s [-s | -d] FILE [FILE ...]\n"
 "\n"
 "Show statistics of ridge classification data.\n"
 "\n"
+"  -s              Classification summary mode (default)\n"
+"  -d              Print classification data mode\n"
 "  -h              Display this message and exit\n"
 "\n"
 "Loads classified ridges from one or more input files, and print some\n"
 "statistics about the classification.  If more than one input file was\n"
-"specified, the first file specified is taken as a reference\n"
-"classification, and for each of the remaining files classification\n"
-"error information is printed.\n"
+"specified in summary (-s) mode, the first file specified is taken as a\n"
+"reference classification, and for each of the remaining files\n"
+"classification error information is printed.\n"
 "\n"
 "Please report bugs to %s.\n",
 name, PACKAGE_BUGREPORT);
   exit (status);
 }
 
-static uint8_t *
-load_classification (const char *filename, size_t *classification_size)
+static ClassificationData *
+load_classification (const char *filename)
 {
   RioData *data;
   const uint8_t *buf;
   size_t buf_size;
-  uint8_t *result;
+  ClassificationData *result = malloc(sizeof(ClassificationData));
 
   /* Attempt to load input file */
   data = rio_data_from_file (filename);
@@ -67,7 +83,7 @@ load_classification (const char *filename, size_t *classification_size)
     exit (2);
   }
 
-  /* Check metadata */
+  /* Check classification metadata */
   buf = (uint8_t *) rio_data_get_metadata (data, RIO_KEY_IMAGE_CLASSIFICATION,
                                            &buf_size);
   if (buf == NULL) {
@@ -81,11 +97,27 @@ load_classification (const char *filename, size_t *classification_size)
     exit (3);
   }
 
-  /* Copy classification data and free ridge data */
-  result = malloc (buf_size);
-  memcpy (result, buf, buf_size);
+  /* Copy classification data */
+  result->num_entries = rio_data_get_num_entries (data);
+  result->classification = malloc (buf_size * sizeof (uint8_t));
+  memcpy (result->classification, buf, buf_size);
+
+  /* Check likelihood metadata */
+  result->likelihood = NULL;
+  buf = (uint8_t *) rio_data_get_metadata (data, RIO_KEY_IMAGE_CLASS_LIKELIHOOD,
+                                           &buf_size);
+  if (buf != NULL) {
+    if (buf_size != rio_data_get_num_entries (data) * sizeof (float)) {
+      fprintf (stderr ,"ERROR: %s contains invalid classification metadata\n",
+               filename);
+      exit (3);
+    }
+
+    result->likelihood = malloc (buf_size * sizeof (float));
+    memcpy (result->likelihood, buf, buf_size);
+  }
+
   rio_data_destroy (data);
-  *classification_size = buf_size;
   return result;
 }
 
@@ -118,16 +150,20 @@ print_diff_stats (const uint8_t *classification,
 
 int main (int argc, char **argv)
 {
-  int c;
+  int c, mode = MODE_SUMMARY;
   char *infile = NULL;
-  uint8_t *ref = NULL;
-  uint8_t *data = NULL;
-  size_t ref_size = 0;
-  size_t data_size = 0;
+  ClassificationData *ref = NULL;
+  ClassificationData *data = NULL;
 
   /* Parse command-line arguments */
   while ((c = getopt (argc, argv, GETOPT_OPTIONS)) != -1) {
     switch (c) {
+    case 's':
+      mode = MODE_SUMMARY;
+      break;
+    case 'd':
+      mode = MODE_DUMP;
+      break;
    case 'h':
       usage (argv[0], 0);
       break;
@@ -152,25 +188,50 @@ int main (int argc, char **argv)
     usage (argv[0], 1);
   }
 
-  while (argc - optind) {
-    infile = argv[optind++];
+  switch (mode) {
 
-    data = load_classification (infile, &data_size);
-    printf ("File: %s\n\n", infile);
-    print_basic_stats (data, data_size);
-    printf ("\n");
+  case MODE_SUMMARY:
+    while (argc - optind) {
+      infile = argv[optind++];
 
-    if (ref != NULL) {
-      if (data_size != ref_size) {
-        fprintf (stderr, "ERROR: Input files contain different numbers of elements.\n\n");
-        exit (4);
+      data = load_classification (infile);
+      printf ("File: %s\n\n", infile);
+      print_basic_stats (data->classification, data->num_entries);
+      printf ("\n");
+
+      if (ref != NULL) {
+        if (data->num_entries != ref->num_entries) {
+          fprintf (stderr, "ERROR: Input files contain different numbers of elements.\n\n");
+          exit (4);
+        }
+        print_diff_stats (data->classification, ref->classification,
+                          ref->num_entries);
+        free (data->classification);
+        free (data->likelihood);
+        free (data);
+      } else {
+        ref = data;
       }
-      print_diff_stats (data, ref, ref_size);
-      free (data);
-    } else {
-      ref = data;
-      ref_size = data_size;
     }
+    break;
+
+  case MODE_DUMP:
+    if (argc - optind > 1) {
+      fprintf (stderr, "Warning: Only the first input file specified is used in dump mode.\n\n");
+    }
+    data = load_classification (argv[optind]);
+    for (int i = 0; i < data->num_entries; i++) {
+      if (data->likelihood) {
+        printf ("%i\t%e\n", (int) data->classification[i],
+                rio_ntohf (data->likelihood[i]));
+      } else {
+        printf ("%i\n", (int) data->classification[i]);
+      }
+    }
+    break;
+  default:
+    abort ();
   }
+
   return 0;
 }
