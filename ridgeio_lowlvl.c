@@ -21,51 +21,59 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
+#include <arpa/inet.h>
 
 #include "ridgeio.h"
+
+float
+rio_htonf (float val)
+{
+  uint32_t i;
+  memcpy (&i, &val, sizeof (i));
+  i = htonl (i);
+  memcpy (&val, &i, sizeof (i));
+  return val;
+}
+
+float
+rio_ntohf (float val)
+{
+  uint32_t i;
+  memcpy (&i, &val, sizeof (i));
+  i = ntohl (i);
+  memcpy (&val, &i, sizeof (i));
+  return val;
+}
 
 int
 rio_write_uint32 (uint32_t val, FILE *fp)
 {
-  for (int i = 0; i < 4; i++) {
-    int s = fputc (val >> ((3-i)*8), fp);
-    if (s == EOF) return 0;
-  }
-  return 1;
+  uint32_t v = htonl (val);
+  return (fwrite (&v, 4, 1, fp) == 1);
 }
 
 int
 rio_write_float (float val, FILE *fp) {
-  union {
-    uint32_t i;
-    float f;
-  } u;
-  u.f = val;
-  return rio_write_uint32 (u.i, fp);
+  float v = rio_htonf (val);
+  return (fwrite (&v, 4, 1, fp) == 1);
 }
 
 int
 rio_read_uint32 (uint32_t *val, FILE *fp)
 {
-  uint32_t v = 0;
-  for (int i = 0; i < 4; i ++) {
-    int b = fgetc (fp);
-    if (b == EOF) return 0;
-    v = (v << 8) + b;
-  }
-  *val = v;
+  uint32_t v;
+  if (fread (&v, 4, 1, fp) != 1) return 0;
+  *val = ntohl (v);
   return 1;
 }
 
 int
 rio_read_float (float *val, FILE *fp)
 {
-  union {
-    uint32_t i;
-    float f;
-  } u;
-  if (!rio_read_uint32 (&u.i, fp)) return 0;
-  *val = u.f;
+  float v;
+  if (fread (&v, 4, 1, fp) != 1) return 0;
+  *val = rio_ntohf (v);
   return 1;
 }

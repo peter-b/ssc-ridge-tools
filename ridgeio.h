@@ -263,6 +263,8 @@ void rio_data_take_metadata (RioData *data, uint32_t key,
 
 /* Low-level IO functions */
 
+float rio_htonf (float val);
+float rio_ntohf (float val);
 int rio_write_uint32 (uint32_t val, FILE *fp);
 int rio_write_float (float val, FILE *fp);
 int rio_read_uint32 (uint32_t *val, FILE *fp);
