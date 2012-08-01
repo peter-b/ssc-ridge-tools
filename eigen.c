@@ -61,11 +61,11 @@ trailing_eigenvalue (struct mat2x2 A) {
   float dt = (ta - tb) / 2;
   float mu;
   if (dt < 0) {
-    mu = tb - tab * (tab / (dt + hypot (dt, tab)));
+    mu = tb - tab * (tab / (dt + hypotf (dt, tab)));
   } else if (dt == 0) {
     mu = tb - fabsf (tab);
   } else {
-    mu = tb + tab * (tab / ((-dt) + hypot (dt, tab)));
+    mu = tb + tab * (tab / ((-dt) + hypotf (dt, tab)));
   }
 
   if (FLOAT_EPSILON * fabsf (mu) > (fabsf (ta) + fabsf (tab))) {
