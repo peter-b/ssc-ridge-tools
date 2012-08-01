@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <math.h>
 #include <assert.h>
+#include <getopt.h>
 
 #include "ridgetool.h"
 
@@ -38,6 +39,26 @@ enum {
 
 #define GETOPT_OPTIONS "slpt:m:j:i:vh"
 
+struct option long_options[] =
+  {
+    {"segments", 0, 0, 's'},
+    {"lines", 0, 0, 'l'},
+    {"points", 0, 0, 'p'},
+    {"scales", 1, 0, 't'},
+    {"metric", 1, 0, 'm'},
+    {"threads", 1, 0, 'j'},
+    {"nan", 1, 0, 'i'},
+    {"help", 0, 0, 'h'},
+
+    {"verbose", 0, 0, 'v'},
+    {"dump-L", 1, 0, '1'},
+    {"dump-Lp", 1, 0, '2'},
+    {"dump-Lpp", 1, 0, '3'},
+    {"dump-RnormL", 1, 0, '4'},
+
+    {0, 0, 0, 0} /* Guard */
+  };
+
 int verbose_mode;
 
 static void
@@ -48,14 +69,22 @@ usage (char *name, int status)
 "\n"
 "Scale-space image ridge extraction tool.\n"
 "\n"
-"  -s              Extract ridge segments [default mode]\n"
-"  -l              Extract ridge lines\n"
-"  -p              Extract ridge points\n"
-"  -t SCALES       Specify a single scale or a range of scales\n"
-"  -m NORM         Strength metric to use (A, M or N) [default N]\n"
-"  -j THREADS      Number of multiprocessing threads to use [default %i]\n"
-"  -i VALUE        Set non-finite values in input to VALUE [default 0]\n"
-"  -h              Display this message and exit\n"
+"Options:\n"
+"  -s, --segments  Extract ridge segments [default mode]\n"
+"  -l, --lines     Extract ridge lines\n"
+"  -p, --points    Extract ridge points\n"
+"  -t, --scales=SCALES  Specify a single scale or a range of scales\n"
+"  -m, --metric=NORM    Strength metric to use (A, M or N) [default N]\n"
+"  -j, --threads=NUM  Number of parallel threads to use [default %i]\n"
+"  -i, --nan=VAL   Set non-finite input values to VAL [default 0]\n"
+"  -h, --help      Display this message and exit\n"
+"\n"
+"Debugging options:\n"
+"  -v, --verbose   Enable debugging output\n"
+"  --dump-L=FILE   Dump scale-space representation to FILE\n"
+"  --dump-Lp=FILE  Dump Lp metric to FILE\n"
+"  --dump-Lpp=FILE    Dump Lpp metric to FILE\n"
+"  --dump-R=FILE   Dump strength metric to FILE\n"
 "\n"
 "Extracts ridges from INFILE, which should be a single-channel 32-bit\n"
 "IEEE floating point TIFF file.  Optionally, outputs extracted ridge\n"
@@ -130,6 +159,8 @@ int
 main (int argc, char **argv)
 {
   char *filename, *out_filename = NULL;
+  char *L_dumpfile = NULL, *Lp_dumpfile = NULL,
+    *Lpp_dumpfile = NULL, *RnormL_dumpfile = NULL;
   RutSurface *image = NULL;
   RutSurface *Lp = NULL, *Lpp = NULL, *RnormL = NULL;
   RidgePointsSS *ridges = NULL;
@@ -147,7 +178,10 @@ main (int argc, char **argv)
   verbose_mode = 0;
 
   /* Parse command-line arguments */
-  while ((c = getopt (argc, argv, GETOPT_OPTIONS)) != -1) {
+  while (1) {
+    c = getopt_long (argc, argv, GETOPT_OPTIONS, long_options, NULL);
+    if (c == -1) break;
+
     switch (c) {
     case 's':
       mode = MODE_SEGMENTS;
@@ -192,21 +226,27 @@ main (int argc, char **argv)
                  optarg);
         usage (argv[0], 1);
       }
-    case 'v':
-      verbose_mode = 1;
-      break;
     case 'h':
       usage (argv[0], 0);
       break;
+
+    case 'v':
+      verbose_mode = 1;
+      break;
+    case '1':
+      L_dumpfile = optarg;
+      break;
+    case '2':
+      Lp_dumpfile = optarg;
+      break;
+    case '3':
+      Lpp_dumpfile = optarg;
+      break;
+    case '4':
+      RnormL_dumpfile = optarg;
+      break;
+
     case '?':
-      if ((optopt != ':') && (strchr (GETOPT_OPTIONS, optopt) != NULL)) {
-        fprintf (stderr, "ERROR: -%c option requires an argument.\n\n", optopt);
-      } else if (isprint (optopt)) {
-        fprintf (stderr, "ERROR: Unknown option -%c.\n\n", optopt);
-      } else {
-        fprintf (stderr, "ERROR: Unknown option character '\\x%x'.\n\n",
-                 optopt);
-      }
       usage (argv[0], 1);
     default:
       abort ();
@@ -263,6 +303,14 @@ main (int argc, char **argv)
     rut_filter_destroy (filt);
   }
 
+  /* Dump scale-space representation if requested. */
+  if (L_dumpfile) {
+    debug_printf ("Dumping filtered image to %s.\n", L_dumpfile);
+    /* Deliberately ignore return status; message will already have
+     * been output. */
+    rut_surface_to_tiff (image, L_dumpfile);
+  }
+
   debug_printf ("Calculating metrics\n");
   Lp = rut_surface_new_like (image);
   Lpp = rut_surface_new_like (image);
@@ -271,6 +319,23 @@ main (int argc, char **argv)
 
   /* Free up image to save memory */
   rut_surface_destroy (image);
+
+  /* Dump metrics if requested. */
+  /* Deliberately ignore return status; message will already have
+   * been output. */
+  if (Lp_dumpfile) {
+    debug_printf ("Dumping Lp metric to %s.\n", Lp_dumpfile);
+    rut_surface_to_tiff (Lp, Lp_dumpfile);
+  }
+  if (Lpp_dumpfile) {
+    debug_printf ("Dumping Lpp metric to %s.\n", Lpp_dumpfile);
+    rut_surface_to_tiff (Lpp, Lpp_dumpfile);
+  }
+  if (RnormL_dumpfile) {
+    debug_printf ("Dumping R metric to %s.\n", RnormL_dumpfile);
+    rut_surface_to_tiff (RnormL, RnormL_dumpfile);
+  }
+
 
   /* Find ridge points */
   debug_printf ("Finding ridge points\n");
