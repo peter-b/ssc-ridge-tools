@@ -1,0 +1,36 @@
+=========================================================
+ Surrey Space Centre ridge tools for SAR data processing
+=========================================================
+
+Copyright (C) 2010-2012 Peter Brett <p.brett@surrey.ac.uk>
+
+To-do list
+==========
+
+- Windows support.  Will require use of multithreading instead of
+  multiprocessing. Changes will need to be made in
+  ridgeutil_multiproc.c and in any programs which use
+  rut_multiproc_task().
+
+- Multi-scale ridge detection.  Most of the required capabilities are
+  already present, including three-dimensional image spaces and
+  filtering along the scale dimension.  Supporting large images will
+  require some sort of support for automatically subdividing and
+  recombining images, due to the much higher memory requirements.
+  Changes will be required throughout, including upgrades to ridge
+  file format to incorporate scale data.
+
+- Support in the tools for multiclass classification.  Mostly all
+  that's required is support in the tool frontends; the file format
+  uses a byte for each element's classification data, and so to all of
+  the tools, so support for up to 256 classes is pretty much there
+  already.
+
+- ridgeconv doesn't understand classification metadata. To improve
+  visualisation of classified ridge data, it would be useful to add
+  support for optionally colouring the graphical formats by class.
+
+..
+  Local Variables:
+  mode: text
+  End:
