@@ -369,7 +369,7 @@ MP_ridge_lines_SS_build2_func (int thread_num, int thread_count, void *user_data
       RidgeLinesSSEntry *root = RIDGE_LINES_SS_PTR (l, row, col);
 
       int n_neighbours;
-      struct Point neighbours[2], startp;
+      struct Point neighbours[2], startp, endp;
       struct Point currp = POINT_NULL;
       struct Point prevp = POINT_NULL;
       struct Point nextp = POINT_NULL;
@@ -411,7 +411,40 @@ MP_ridge_lines_SS_build2_func (int thread_num, int thread_count, void *user_data
       }
       startp = currp;
 
+      /* Now walk to find the other end of the list. We need to find
+       * both ends so that we can make sure to link the list in
+       * canonical order. */
+      if (n_neighbours == 1) {
+        /* If root had only one neighbour, it's the end. */
+        endp = rootp;
+      } else if (point_equal (startp, neighbours[1])) {
+        /* If root has start as other neighbour, there's a loop, and
+         * root is the end. */
+        endp = rootp;
+      } else {
+        prevp = rootp;
+        currp = neighbours[1];
+        while (1) {
+          nextp = walk_points (p, currp, prevp);
+          if (point_equal (nextp, rootp)) abort(); /* We shouldn't find a loop! */
+          if (point_equal (nextp, POINT_NULL)) break;
+
+          prevp = currp;
+          currp = nextp;
+        }
+        endp = currp;
+      }
+
+      /* If the end is closer to the start of the image than the
+       * start, swap end and start. */
+      if ((endp.row < startp.row) || (endp.row == startp.row && endp.col < startp.col)) {
+        currp = endp;
+        endp = startp;
+        startp = currp;
+      }
+
       /* Now actually build the list */
+      currp = startp;
       prevp = POINT_NULL;
       while (1) {
         nextp = walk_points (p, currp, prevp);
