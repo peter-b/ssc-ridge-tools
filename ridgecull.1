@@ -1,0 +1,55 @@
+.TH ridgecull 1 "April 23, 2013" "Surrey Space Centre" 1.0
+.SH NAME
+ridgecull - Filter ridges based on threshold
+.SH SYNOPSIS
+.B ridgecull
+[\fIOPTION\fR ...] \fIRDG_FILE\fR [\fIOUT_FILE\fR]
+
+.SH DESCRIPTION
+.PP
+\fBridgecull\fR is a tool for basic filtering of ridge data extracted
+using \fBridgetool\fR(1) based on thresholds of image brightness,
+ridge strength and (for ridge line data) length.
+
+Ridge data is read from \fIRDG_FILE\fR, and any data that do not meet
+all of the specified thresholds are removed.  The remaining data is
+written to \fIOUT_FILE\fR, if specified, and otherwise written back to
+\fIRDG_FILE\fR.
+
+.SH OPTIONS
+.TP 8
+\fB-b\fR \fIBRIGHTNESS\fR
+Specify a brightness threshold.  For line data, the mean brightness
+taken across all points in the line is used.
+.TP 8
+\fB-s\fR \fISTRENGTH\fR
+Specify a ridge strength threshold.  For line data, the mean ridge
+strength taken across all paints in the line is used.
+.TP 8
+\fB-l\fR \fILENGTH\fR
+Specify a line length threshold.  For point or segment data, this
+option is silently ignored.
+.TP 8
+\fB-i\fR
+Invert the sense of all thresholds.  By default, values below the
+thresholds are removed; if this option is specified, values above the
+thresholds are removed.
+.TP 8
+\fB-h\fR, \fB--help\fR
+Print a help message.
+
+.SH AUTHOR
+Written by Peter TB Brett, Surrey Space Centre, University of Surrey,
+UK.
+
+.SH COPYRIGHT
+.nf
+Copyright \(co 2010-2013 Peter TB Brett <p.brett@surrey.ac.uk>.
+License GPLv3+: GNU GPL version 3 or later
+<http://gnu.org/licenses/gpl.html>.
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+\fBridgetool\fR(1).

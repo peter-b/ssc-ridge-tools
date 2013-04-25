@@ -2,7 +2,7 @@
  Surrey Space Centre ridge tools for SAR data processing
 =========================================================
 
-Copyright (C) 2010-2012 Peter Brett <p.brett@surrey.ac.uk>
+Copyright (C) 2010-2013 Peter Brett <p.brett@surrey.ac.uk>
 
 Introduction
 ============
@@ -26,44 +26,44 @@ For more information, please see:
 Programs and librarys
 =====================
 
-All tools in the 'ssc-ridge-tools' package support an '-h' option to
+All tools in the `ssc-ridge-tools' package support an `-h' option to
 display usage information.
 
- - 'ridgetool' detects ridges in a single-channel 32-bit floating
+ - `ridgetool' detects ridges in a single-channel 32-bit floating
    point TIFF file, and can extract either ridge points, segments or
    full curvilinear features.
 
- - 'ridgeconv' converts ridge data to other formats, and supports CSV,
+ - `ridgeconv' converts ridge data to other formats, and supports CSV,
    PNG, TIFF, PDF, and SVG output.
 
- - 'ridgecull' removes ridges from a ridge data file, based on
+ - `ridgecull' removes ridges from a ridge data file, based on
    threshold values of brightness, length or ridge strength.
 
- - 'xridgeclass' is a graphical tool for manual 2-class classification
+ - `xridgeclass' is a graphical tool for manual 2-class classification
    of ridge data.
 
- - 'ridgeclassexport' exports classified ridge data into per-class
+ - `ridgeclassexport' exports classified ridge data into per-class
    data files.
 
-The 'libridgetool' library provides two APIs:
+ - `ridgeclassstat' calculates classification statistics and exports
+   classification information.
+
+The `libridgetool' library provides two APIs:
 
  - loading and saving ridge data to an efficient binary file format;
  - surface and scale space data types that support multiprocessing.
 
-For more information, see the 'ridgeutil.h' and 'ridgeio.h' header files.
+For more information, see the `ridgeutil.h' and `ridgeio.h' header files.
 
 Installation
 ============
 
-The 'ssc-ridge-tools' package can currently only be compiled on:
+The `ssc-ridge-tools' package can currently only be compiled on 32-bit
+and 64-bit architectures that support atomic compare-and-swap
+operations (e.g. recent x86 and x86-64 systems)
 
- - 32-bit architectures that support atomic compare-and-swap
-   operations (e.g. recent x86 systems)
- - 64-bit architectures that support the 'CMPXCHG16B' processor
-   instruction.
-
-It also requires the 'mmap()' system call to support the 'MAP_SHARED'
-and 'MAP_ANONYMOUS' flags.  Most recent versions of Linux provide
+It also requires the `mmap()' system call to support the `MAP_SHARED'
+and `MAP_ANONYMOUS' flags.  Most recent versions of Linux provide
 this.
 
 Dependencies
@@ -72,7 +72,8 @@ Dependencies
 In order to compile and install the 'ssc-ridge-tools' package, you must
 have the following tools and libraries installed:
 
- - A C compiler and standard library (GCC/glibc are recommended).
+ - A C compiler and standard library (GCC 4.7 or later and glibc are
+   recommended).
 
  - The `pkg-config' tool for managing shared libraries.
    <http://pkgconfig.freedesktop.org/>
@@ -133,12 +134,12 @@ License
 
 Surrey Space Centre ridge tools for SAR data processing (this package)
 is freely distributable under the GNU Public License (GPL) version 3.0
-or (at your option) any later version.  See the 'COPYING' file for the
+or (at your option) any later version.  See the `COPYING' file for the
 full text of the license.
 
 The programs and associated files are:
 
-  Copyright (C) 2010-2012 Peter Brett <p.brett@surrey.ac.uk>
+  Copyright (C) 2010-2013 Peter Brett <p.brett@surrey.ac.uk>
 
 ..
   Local Variables:

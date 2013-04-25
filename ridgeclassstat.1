@@ -1,0 +1,56 @@
+.TH ridgeclassstat 1 "April 23, 2013" "Surrey Space Centre" 1.0
+.SH NAME
+ridgeclassstat - Display ridge data classification statistics
+.SH SYNOPSIS
+.B ridgeclassstat
+[\fB-s\fR] \fIFILE\fR [\fIFILE\fR ...]
+
+.B ridgeclassstat
+-d \fIFILE\fR
+
+.SH DESCRIPTION
+.PP
+\fBridgeclassstat\fR displays information about classification
+metadata in ridge data files.  It supports binary classified data, and
+it has two modes.
+
+In the default `summary' mode, \fBridgeclassstat\fR shows the total
+populations of each class for each of the \fIFILE\fRs specified.  If
+more than one \fIFILE\fR is specified, the first is taken as a
+reference classification, and misclassification error rates are
+displayed for each of the remaining \fIFILE\fRs.  If the \fIFILE\fRs
+do not all contain the same number of entries, an error message is
+printed.
+
+In the `dump' mode, \fBridgeclassstat\fR prints a table to standard
+output, with one row per data entry in \fIFILE\fR.  The first field in
+each row contains the class label associated with that entry.  If
+\fIFILE\fR contains class likelihood data, the second field in each
+row contains the posterior likelihood of the class label.
+
+.SH OPTIONS
+.TP 8
+\fB-s\fR
+Display classification summary on standard output.
+.TP 8
+\fB-d-\fR
+Display detailed classification data on standard output.
+.TP 8
+\fB-h\fR
+Print a help message.
+
+.SH AUTHOR
+Written by Peter TB Brett, Surrey Space Centre, University of Surrey,
+UK.
+
+.SH COPYRIGHT
+.nf
+Copyright \(co 2010-2013 Peter TB Brett <p.brett@surrey.ac.uk>.
+License GPLv3+: GNU GPL version 3 or later
+<http://gnu.org/licenses/gpl.html>.
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+\fBridgetool\fR(1), \fBridgeclassexport\fR(1).

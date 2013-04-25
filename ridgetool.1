@@ -1,0 +1,107 @@
+.TH ridgetool 1 "April 23, 2013" "Surrey Space Centre" 1.0
+.SH NAME
+ridgetool - Image ridge detection
+.SH SYNOPSIS
+.B ridgetool
+[\fIOPTION\fR ...] \fIIMAGE_FILE\fR [\fIRDG_FILE\fR]
+
+.SH DESCRIPTION
+.PP
+
+\fBridgetool\fR is a tool for extracting bright curvilinear features
+from images using scale-space ridge detection.  It takes a TIFF image
+as input, and generates a ridge data file as output. The tool can
+extract individual ridge points, two-point linear ridge segments, or
+full ridge lines.  It is highly scalable to large input images, and
+can efficiently use multiple processors.  It is based on a
+single-scale variant of the Lindeberg scale-space detector described
+in [LINDEBERG1998].
+
+The input file \fIIMAGE_FILE\fR must be a single-channel TIFF image in
+32-bit floating point format.  If an output file \fIRDG_FILE\fR is
+specified, \fBridgetool\fR will populate it with ridge data in the
+ridge data file format.
+
+.SH OPTIONS
+.TP 8
+\fB-s\fR, \fB--segments\fR
+Extract ridge segments. This is the default extraction mode.  It
+extracts ridge data as pairs of adjacent ridge points.
+.TP 8
+\fB-l\fR, \fB--lines\fR
+Extract ridge lines. In this mode, full ridge lines are extracted as
+curvilinear features composed of a series of ridge points.
+.TP 8
+\fB-p\fR, \fB--points\fR
+Extract individual ridge points.
+.TP 8
+\fB-t\fR, \fB--scales\fR=\fISCALE\fR[:\fISCALE2\fR ...]
+Specify a single \fISCALE\fR or a set of scales to be used for
+scale-space generation.  If multiple scales are specified, only the
+first is currently chosen.  If no scale was specified, no scale-space
+is generated, and ridges are extracted directly from the input image.
+.TP 8
+\fB-m\fR, \fB--metric\fR=[\fBN\fR | \fBA\fR | \fBM\fR]
+Set the ridge strength metric to be used. The three metrics (\fBA\fR, \fBN\fR and
+\fBM\fR) are described more fully in [LINDEBERG1998].  By default, the
+\fBN\fR metric is used.
+.TP 8
+\fB-j\fR, \fB--threads\fR=\fINUM\fR
+Set the number of parallel threads to use.  Usually, \fINUM\fR should
+be set to the number of available processors.  By default, only a
+single thread is used.
+.TP 8
+\fB-i\fR, \fB--nan\fR=\fIVAL\fR
+Replace bad pixel values with \fIVAL\fR. Because some remote sensing
+image products contain non-finite or NaN pixel values, \fBridgetool\fR
+will replace these with a finite value before scale-space generation.
+By default, the replacement value is 0.
+.TP 8
+\fB-h\fR, \fB--help\fR
+Print a help message.
+
+.SH DEBUGGING OPTIONS
+.TP 8
+\fB-v\fR, \fB--verbose\fR
+Enable output of debugging messages.
+.TP 8
+\fB--dump-L\fR=\fIFILE\fR
+Export the scale-space representation to \fIFILE\fR as a
+single-channel 32-bit floating point TIFF image.
+.TP 8
+\fB--dump-Lp\fR=\fIFILE\fR
+Export the Lp metric to \fIFILE\fR as a single-channel 32-bit floating
+point TIFF image.
+.TP 8
+\fB--dump-Lpp\fR=\fIFILE\fR
+Export the Lpp metric to \fIFILE\fR as a single-channel 32-bit
+floating point TIFF image.
+.TP 8
+\fB--dump-R\fR=\fIFILE\fR
+Dump the ridge strength metric to \fIFILE\fR as a single-channel
+32-bit floating point TIFF image.
+
+.SH REFERENCES
+
+.TP 8
+[LINDEBERG1998]
+T. Lindeberg, \fIEdge detection and ridge detection with automatic
+scale selection\fR, Int. J. of Comput. Vision, vol. 30, no. 2,
+pp. 117–154, Nov. 1998. <doi:10.1023/A:1008097225773>
+
+
+.SH AUTHOR
+Written by Peter TB Brett, Surrey Space Centre, University of Surrey,
+UK.
+
+.SH COPYRIGHT
+.nf
+Copyright \(co 2010-2013 Peter TB Brett <p.brett@surrey.ac.uk>.
+License GPLv3+: GNU GPL version 3 or later
+<http://gnu.org/licenses/gpl.html>.
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+\fBridgeconv\fR(1), \fBridgecull\fR(1).

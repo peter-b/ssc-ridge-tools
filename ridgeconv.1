@@ -1,0 +1,74 @@
+.TH ridgeconv 1 "April 23, 2013" "Surrey Space Centre" 1.0
+.SH NAME
+ridgeconv - Convert ridge data to other formats
+.SH SYNOPSIS
+.B ridgeconv
+[\fIOPTION\fR ...] \fIRDG_FILE\fR \fIOUT_FILE\fR
+
+.SH DESCRIPTION
+.PP
+\fBridgeconv\fR is a tool for exporting ridge data extracted using
+\fBridgetool\fR(1) to a variety of other formats for presentation
+and/or further data processing.
+
+\fBridgeconv\fR supports three types of output format.  In raster
+outputs (PNG and TIFF), the output is a greyscale raster image where
+pixels are coloured white if they have exactly two adjacent ridge
+points, and black otherwise.  In vector formats (SVG and PDF), the
+output contains black circular dots for each ridge point if
+\fIRDG_FILE\fR contains ridge point data, and black lines for each
+segment/line otherwise.
+
+In data table format (CSV), the output contains four fields for each
+ridge point: distance from the top of the image, distance from the
+left of the image, interpolated image brightness at the point, and the
+ridge strength metric value at the point.  If \fIRDG_FILE\fR contains
+point data, the output is with one point per row; if segment data, the
+output is with two points per row; and if line data, one point per row
+with blank rows separating each line.
+
+If no output format is specified on the command line, \fBridgeconv\fR
+will attempt to guess the correct format from the name of
+\fIOUT_FILE\fR.
+
+In CSV output mode only, specifying a value of `\fB-\fR' for
+\fIOUT_FILE\fR will cause output to be printed to standard output.
+
+.SH OPTIONS
+.TP 8
+\fB-s\fR
+Generate a Scalar Vector Graphics (SVG) image.
+.TP 8
+\fB-d\fR
+Generate a Portable Document Format (PDF) image.  This format is
+recommended for use with \fBpdftex\fR(1).
+.TP 8
+\fB-c\fR
+Generate a plain text data table in Comma Separated Values (CSV)
+format.
+.TP 8
+\fB-p\fR
+Generate a black and white raster image in Portable Network Graphics
+(PNG) format.
+.TP 8
+\fB-t\fR
+Generate a black and white raster image in Tagged Image File Format (TIFF).
+.TP 8
+\fB-h\fR, \fB--help\fR
+Print a help message.
+
+.SH AUTHOR
+Written by Peter TB Brett, Surrey Space Centre, University of Surrey,
+UK.
+
+.SH COPYRIGHT
+.nf
+Copyright \(co 2010-2013 Peter TB Brett <p.brett@surrey.ac.uk>.
+License GPLv3+: GNU GPL version 3 or later
+<http://gnu.org/licenses/gpl.html>.
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+\fBridgetool\fR(1).
