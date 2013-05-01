@@ -1,0 +1,40 @@
+.TH xridgeclass 1 "April 23, 2013" "Surrey Space Centre" 1.0
+.SH NAME
+xridgeclass - Manually classify ridge line data.
+.SH SYNOPSIS
+.B xridgeclass
+[\fIFILE\fR]
+
+.SH DESCRIPTION
+.PP
+\fBxridgeclass\fR is a graphical editor for manual classification of
+ridge line data extracted using \fBridgetool\fR(1)'s \fB-l\fR mode.
+
+It supports binary classification.  To select a curvilinear feature in
+the editor, click mouse button 1 (usually the left mouse button) and
+to cycle its class label, click mouse button 3 (usually the right
+mouse button).
+
+If a \fIFILE\fR is given as an argument, it will be loaded on startup.
+Otherwise, a file can be loaded using the `Load' toolbar button.
+
+.SH OPTIONS
+.TP 8
+\fB-h\fR
+Print a help message.
+
+.SH AUTHOR
+Written by Peter TB Brett, Surrey Space Centre, University of Surrey,
+UK.
+
+.SH COPYRIGHT
+.nf
+Copyright \(co 2010-2013 Peter TB Brett <p.brett@surrey.ac.uk>.
+License GPLv3+: GNU GPL version 3 or later
+<http://gnu.org/licenses/gpl.html>.
+.PP
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+\fBridgetool\fR(1), \fBridgeclassexport\fR(1), \fBridgeclassstat\fR(1).
