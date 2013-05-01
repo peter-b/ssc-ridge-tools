@@ -1,6 +1,6 @@
 /*
  * Surrey Space Centre ridge tools for SAR data processing
- * Copyright (C) 2011  Peter Brett <p.brett@surrey.ac.uk>
+ * Copyright (C) 2011-2013  Peter Brett <p.brett@surrey.ac.uk>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <gtk/gtk.h>
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <math.h>
 #include <ridgeio.h>
+
+#define GETOPT_OPTIONS "h"
+
+static void
+usage (char *name, int status)
+{
+  printf (
+"Usage: %s [FILE]\n"
+"\n"
+"Edit ridge data file class labels.\n"
+"\n"
+"  -h              Display this message and exit\n"
+"\n"
+"Displays a graphical interface for editing classification metadata\n"
+"attached to ridge data files.  If a FILE is specified, loads and\n"
+"displays it for editing at startup.\n"
+"\n"
+"Please report bugs to %s.\n",
+name, PACKAGE_BUGREPORT);
+
+  exit (status);
+}
 
 /* ------------------------------------------------------ */
 
@@ -44,8 +69,8 @@ typedef enum {
 
 RioData *active_data = NULL;
 gchar *active_filename = NULL;
-guint32 active_rows = 256;
-guint32 active_cols = 256;
+guint32 active_rows = 300;
+guint32 active_cols = 400;
 guint8 *active_class = NULL;
 gboolean active_changed = FALSE;
 int selected_index = -1;
@@ -181,6 +206,7 @@ surface_widget_get_scale_factor (GtkWidget *widget)
   return s;
 }
 
+
 static gboolean
 surface_widget_expose_event (GtkWidget *widget, GdkEventExpose *event,
                              gpointer user_data)
@@ -228,6 +254,20 @@ surface_widget_expose_event (GtkWidget *widget, GdkEventExpose *event,
       }
       prev = curr;
     }
+
+    if (j == selected_index) {
+      cairo_save (cr);
+      cairo_set_line_width (cr, 1);
+      cairo_set_source_rgb (cr, 0, 1, 0);
+      cairo_stroke_preserve (cr);
+      cairo_restore (cr);
+    }
+
+    if (active_class[j]) {
+      cairo_set_source_rgb (cr, 1, 0, 0);
+    } else {
+      cairo_set_source_rgb (cr, 0, 0, 1);
+    }
     cairo_stroke (cr);
   }
 
@@ -241,10 +281,11 @@ surface_widget_button_press_event (GtkWidget *widget, GdkEventButton *event,
 {
   if (active_data == NULL) return TRUE;
 
-  if (event->button == 2 && selected_index >= 0
+  if (event->button == 3 && selected_index >= 0
       && selected_index < rio_data_get_num_entries (active_data)) {
     /* Change class */
     active_class[selected_index] = !active_class[selected_index];
+    active_changed = TRUE;
 
   } else if (event->button == 1) {
     /* Change selection */
@@ -282,13 +323,46 @@ create_surface_widget ()
   return drawable;
 }
 
+gboolean
+query_discard_changes (GtkWindow *parent)
+{
+  if (!active_data || !active_changed) return TRUE;
+
+  GtkWidget *dialog =
+    gtk_message_dialog_new (parent,
+                            GTK_DIALOG_MODAL,
+                            GTK_MESSAGE_QUESTION,
+                            GTK_BUTTONS_NONE,
+                            "You have unsaved changes that will be lost if you continue.");
+
+  gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
+                                            "Would you like to discard them?");
+
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog),
+                          "Discard changes", GTK_RESPONSE_OK,
+                          "Cancel", GTK_RESPONSE_CANCEL,
+                          NULL);
+
+  gint response = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+
+  return (response == GTK_RESPONSE_OK) ? TRUE : FALSE;
+}
+
+gboolean
+event_delete (GtkWindow *window, GdkEvent *event, gpointer user_data)
+{
+  if (!query_discard_changes (window)) return TRUE;
+
+  close_data ();
+  gtk_main_quit ();
+  return FALSE;
+}
 
 void
 event_quit (GtkToolButton *toolbutton, gpointer user_data)
 {
-  /* FIXME prompt to save */
-  close_data ();
-  gtk_dialog_response (GTK_DIALOG (user_data), 0);
+  event_delete (GTK_WINDOW (user_data), NULL, NULL);
 }
 
 void
@@ -296,14 +370,15 @@ event_load (GtkToolButton *toolbutton, gpointer user_data)
 {
   GtkWindow *window = GTK_WINDOW (user_data);
 
-  /* FIXME prompt to save */
   GtkWidget *filechooser =
     gtk_file_chooser_dialog_new ("Open ridge data...", window,
                                  GTK_FILE_CHOOSER_ACTION_OPEN,
                                  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
                                  GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
                                  NULL);
-  if (gtk_dialog_run (GTK_DIALOG (filechooser)) == GTK_RESPONSE_ACCEPT) {
+  if (gtk_dialog_run (GTK_DIALOG (filechooser)) == GTK_RESPONSE_ACCEPT
+      && query_discard_changes (window)) {
+
     close_data ();
     gchar *filename =
       gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (filechooser));
@@ -319,7 +394,8 @@ event_load (GtkToolButton *toolbutton, gpointer user_data)
 void
 event_save (GtkToolButton *toolbutton, gpointer user_data)
 {
-  save_data (NULL);
+  if (!active_data) return;
+  save_data (NULL); /* FIXME error handling */
 }
 
 void
@@ -327,18 +403,20 @@ event_save_as (GtkToolButton *toolbutton, gpointer user_data)
 {
   GtkWindow *window = GTK_WINDOW (user_data);
 
+  if (!active_data) return;
+
   GtkWidget *filechooser =
     gtk_file_chooser_dialog_new ("Save ridge data...", window,
                                  GTK_FILE_CHOOSER_ACTION_SAVE,
                                  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                 GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                 GTK_STOCK_SAVE_AS, GTK_RESPONSE_ACCEPT,
                                  NULL);
   if (gtk_dialog_run (GTK_DIALOG (filechooser)) == GTK_RESPONSE_ACCEPT) {
-    close_data ();
     gchar *filename =
       gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (filechooser));
     save_data (filename); /* FIXME error handling */
-    g_free (filename);
+    g_free (active_filename);
+    active_filename = filename;
   }
 
   gtk_widget_destroy (filechooser);
@@ -354,15 +432,18 @@ event_data_changed ()
 GtkWidget *
 create_window ()
 {
-  GtkWidget *window, *layout, *toolbar;
+  GtkWidget *window, *layout, *toolbar, *label;
   GtkToolItem *toolitem;
 
   /* Create & populate window */
-  window = gtk_dialog_new ();
+  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_resizable (GTK_WINDOW (window), TRUE);
+  g_signal_connect (G_OBJECT (window), "delete-event",
+                    G_CALLBACK (event_delete),
+                    NULL);
 
   layout = gtk_vbox_new (FALSE, 2);
-  gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area (GTK_DIALOG (window))), layout);
+  gtk_container_add (GTK_CONTAINER (window), layout);
 
   toolbar = gtk_toolbar_new ();
   gtk_box_pack_start (GTK_BOX (layout), toolbar, FALSE, TRUE, 0);
@@ -399,6 +480,10 @@ create_window ()
   view = create_surface_widget ();
   gtk_box_pack_start (GTK_BOX (layout), view, TRUE, TRUE, 0);
 
+  /* Explanatory label */
+  label = gtk_label_new ("Left click to select. Right click to cycle class.");
+  gtk_box_pack_start (GTK_BOX (layout), label, FALSE, TRUE, 0);
+
   gtk_widget_show_all (layout);
 
   return window;
@@ -409,7 +494,34 @@ main (int argc, char **argv)
 {
   gtk_init (&argc, &argv);
   GtkWidget *window = create_window ();
-  gtk_dialog_run (GTK_DIALOG (window));
-  gtk_widget_destroy (window);
+  int c;
+
+  /* Parse command-line arguments */
+  while ((c = getopt (argc, argv, GETOPT_OPTIONS)) != -1) {
+    switch (c) {
+    case 'h':
+      usage (argv[0], 0);
+      break;
+    case '?':
+      if ((optopt != ':') && (strchr (GETOPT_OPTIONS, optopt) != NULL)) {
+        fprintf (stderr, "ERROR: -%c option requires an argument.\n\n", optopt);
+      } else if (isprint (optopt)) {
+        fprintf (stderr, "ERROR: Unknown option -%c.\n\n", optopt);
+      } else {
+        fprintf (stderr, "ERROR: Unknown option character '\\x%x'.\n\n",
+                 optopt);
+      }
+      usage (argv[0], 1);
+    default:
+      abort ();
+    }
+  }
+
+  if (argc - optind > 0) {
+    load_data (argv[optind], NULL); /* FIXME error handling */
+  }
+
+  gtk_widget_show_all (window);
+  gtk_main ();
   return 0;
 }
