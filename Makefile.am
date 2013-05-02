@@ -2,7 +2,7 @@ bin_PROGRAMS = ridgetool ridgeconv ridgecull xridgeclass ridgeclassexport \
 	 ridgeclassstat
 lib_LTLIBRARIES = libridgetool.la
 include_HEADERS = ridgeutil.h ridgeio.h
-man_MANS = ridgetool.1 ridgeconv.1 ridgecull.1 ridgeclassexport.1 \
+dist_man_MANS = ridgetool.1 ridgeconv.1 ridgecull.1 ridgeclassexport.1 \
 	ridgeclassstat.1 xridgeclass.1
 
 pkgconfigdir = $(libdir)/pkgconfig
