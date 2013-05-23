@@ -16,9 +16,15 @@ AM_SILENT_RULES
 LT_INIT
 
 # Checks for programs.
+AC_PROG_CXX
+AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+AC_PROG_RANLIB
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
@@ -45,7 +51,9 @@ AC_CHECK_LIB([m], [sqrt])
 AC_CHECK_LIB([tiff], [TIFFOpen])
 
 # Checks for header files.
-AC_CHECK_HEADERS([stddef.h valgrind/memcheck.h])
+AC_CHECK_HEADERS([stddef.h stdint.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h locale.h])
+AC_CHECK_HEADERS([valgrind/memcheck.h tiffio.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
@@ -71,7 +79,8 @@ AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset munmap strchr strdup strerror])
+AC_CHECK_FUNCS([memset munmap strchr strdup strerror strcasecmp strrchr])
+AC_CHECK_FUNCS([setlocale])
 
 AC_CONFIG_FILES([Makefile] [libridgetool.pc])
 AC_OUTPUT
